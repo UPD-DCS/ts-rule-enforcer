@@ -41,13 +41,19 @@ export const getAllTopLevelFunctions = (node: ts.Node): ts.Node[] =>
 
 export const getFunctionName = (node: ts.Node): Option.Option<string> =>
   ts.isFunctionDeclaration(node) ? Option.fromNullable(node.name?.getText())
+  : ts.isFunctionExpression(node) ?
+    Option.fromNullable(
+      ts.isVariableDeclaration(node.parent) ? node.parent.name.getText() : null,
+    )
   : ts.isArrowFunction(node) ?
     Option.fromNullable(
       ts.isVariableDeclaration(node.parent) ? node.parent.name.getText() : null,
     )
   : (
     ts.isVariableDeclaration(node) &&
-    Array.length(Array.filter(node.getChildren(), ts.isArrowFunction)) > 0
+    (Array.length(Array.filter(node.getChildren(), ts.isArrowFunction)) > 0 ||
+      Array.length(Array.filter(node.getChildren(), ts.isFunctionExpression)) >
+        0)
   ) ?
     Option.some(node.name.getText())
   : Option.none()

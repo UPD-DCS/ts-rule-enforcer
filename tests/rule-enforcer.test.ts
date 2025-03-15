@@ -86,6 +86,35 @@ describe("expectedFunctions", () => {
     expect(errors).toStrictEqual([])
   })
 
+  test("exact anon function", () => {
+    const source = `
+    const f = function() {
+    }
+  `
+    const rules = Rules.make({
+      expectedFunctions: ["f"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+    expect(errors).toStrictEqual([])
+  })
+
+  test("with extra anon function", () => {
+    const source = `
+    const f = function() {
+    }
+
+    const g = function() {
+    }
+  `
+    const rules = Rules.make({
+      expectedFunctions: ["g"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+    expect(errors).toStrictEqual([])
+  })
+
   test("missing", () => {
     const source = `
     function f() {
@@ -110,6 +139,24 @@ describe("expectedFunctions", () => {
     }
 
     const g = () => {
+    }
+  `
+    const rules = Rules.make({
+      expectedFunctions: ["h"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+    expect(errors).toStrictEqual([
+      RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
+    ])
+  })
+
+  test("missing anon function", () => {
+    const source = `
+    const f = function() {
+    }
+
+    const g = function() {
     }
   `
     const rules = Rules.make({
@@ -150,6 +197,26 @@ describe("expectedFunctions", () => {
   }
 
   const g = () => {
+  }
+`
+    const rules = Rules.make({
+      expectedFunctions: ["h"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+    expect(errors).toStrictEqual([
+      RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
+    ])
+  })
+
+  test("missing inside anon function", () => {
+    const source = `
+  const f = function() {
+    const h = function() {
+    }
+  }
+
+  const g = function() {
   }
 `
     const rules = Rules.make({
