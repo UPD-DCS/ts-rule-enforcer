@@ -788,7 +788,7 @@ import ts from "typescript"
     expect(Array.length(relevantErrors)).toStrictEqual(9)
   })
 
-  test("disallow all", () => {
+  test("allow only effect", () => {
     const source = `
 import { describe, expect, test } from "vitest"
 import { validateCode, Rules, RuleViolation } from "../src/rule-enforcer"
@@ -811,6 +811,96 @@ import ts from "typescript"
       Array.filter((error) => RuleViolation.$is("DisallowedImport")(error)),
     )
 
-    expect(Array.length(relevantErrors)).toStrictEqual(9)
+    expect(Array.length(relevantErrors)).toStrictEqual(7)
+  })
+
+  test("allow only effect.pipe and effect.Array", () => {
+    const source = `
+import { describe, expect, test } from "vitest"
+import { validateCode, Rules, RuleViolation } from "../src/rule-enforcer"
+import { Writer } from "../src/writer"
+import { Array, pipe } from "effect"
+import { Array as abc, pipe as def } from "effect"
+import { Array, pipe, Schema as S, Data, Option } from "effect"
+import * as AstHelper from "./ast-helper"
+import { Writer } from "./writer"
+import { NonEmptyReadonlyArray } from "effect/Array"
+import ts from "typescript"
+`
+    const rules = Rules.make({
+      allowedImports: ["effect.pipe", "effect.Array"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+
+    const relevantErrors = pipe(
+      errors,
+      Array.filter((error) => RuleViolation.$is("DisallowedImport")(error)),
+    )
+
+    expect(Array.length(relevantErrors)).toStrictEqual(8)
+  })
+
+  test("allow only effect.pipe and effect.Array with aliases", () => {
+    const source = `
+import { Array as abc, pipe as def } from "effect"
+`
+    const rules = Rules.make({
+      allowedImports: ["effect.pipe", "effect.Array"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+
+    const relevantErrors = pipe(
+      errors,
+      Array.filter((error) => RuleViolation.$is("DisallowedImport")(error)),
+    )
+
+    expect(Array.length(relevantErrors)).toStrictEqual(0)
+  })
+
+  test("allow all", () => {
+    const source = `
+import { describe, expect, test } from "vitest"
+import { validateCode, Rules, RuleViolation } from "../src/rule-enforcer"
+import { Writer } from "../src/writer"
+import { Array, pipe } from "effect"
+import { Array as abc, pipe as def } from "effect"
+import { Array, pipe, Schema as S, Data, Option } from "effect"
+import * as AstHelper from "./ast-helper"
+import { Writer } from "./writer"
+import { NonEmptyReadonlyArray } from "effect/Array"
+import ts from "typescript"
+`
+    const rules = Rules.make({
+      allowedImports: ["*", "effect.pipe", "effect.Array"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+
+    const relevantErrors = pipe(
+      errors,
+      Array.filter((error) => RuleViolation.$is("DisallowedImport")(error)),
+    )
+
+    expect(Array.length(relevantErrors)).toStrictEqual(0)
+  })
+
+  test("allow ", () => {
+    const source = `
+import ts from "typescript"
+`
+    const rules = Rules.make({
+      allowedImports: ["typescript"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+
+    const relevantErrors = pipe(
+      errors,
+      Array.filter((error) => RuleViolation.$is("DisallowedImport")(error)),
+    )
+
+    expect(Array.length(relevantErrors)).toStrictEqual(0)
   })
 })

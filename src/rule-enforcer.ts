@@ -1,4 +1,4 @@
-import { Array, pipe, Schema as S, Data, Option } from "effect"
+import { Array, pipe, Schema as S, Data, Option, String, HashMap } from "effect"
 import * as AstHelper from "./ast-helper"
 import { Writer } from "./writer"
 import { NonEmptyReadonlyArray } from "effect/Array"
@@ -257,6 +257,68 @@ const validateDisallowIfStatements = (
       (errors) => Writer.error(null, errors),
     )
 
+type ModulePartPattern = Data.TaggedEnum<{
+  AllowAll: {}
+  Regular: { parts: string[] }
+}>
+
+const ModulePartPattern = Data.taggedEnum<ModulePartPattern>()
+
+type AllowedImportPattern = Data.TaggedEnum<{
+  AllowAll: {}
+  Regular: { mapping: HashMap.HashMap<string, ModulePartPattern> }
+}>
+
+const AllowedImportPattern = Data.taggedEnum<AllowedImportPattern>()
+
+const importPatternToRichType = (
+  allowedImportPattern: AllowedImportPattern,
+  patternStr: string,
+) =>
+  AllowedImportPattern.$match(allowedImportPattern, {
+    AllowAll: () => allowedImportPattern,
+    Regular: ({ mapping }) =>
+      patternStr === "*" ? AllowedImportPattern.AllowAll()
+      : !String.includes(".")(patternStr) ?
+        pipe(
+          HashMap.set(mapping, patternStr, ModulePartPattern.AllowAll()),
+          (mapping) => AllowedImportPattern.Regular({ mapping }),
+        )
+      : pipe(String.replace(/\..+$/, "")(patternStr), (key) =>
+          Option.match(HashMap.get(mapping, key), {
+            onSome: (modulePartPattern) =>
+              ModulePartPattern.$match(modulePartPattern, {
+                AllowAll: () => allowedImportPattern,
+                Regular: ({ parts }) =>
+                  pipe(
+                    HashMap.set(
+                      mapping,
+                      key,
+                      ModulePartPattern.Regular({
+                        parts: Array.append(
+                          parts,
+                          String.replace(/^.+\./, "")(patternStr),
+                        ),
+                      }),
+                    ),
+                    (mapping) => AllowedImportPattern.Regular({ mapping }),
+                  ),
+              }),
+            onNone: () =>
+              pipe(
+                HashMap.set(
+                  mapping,
+                  key,
+                  ModulePartPattern.Regular({
+                    parts: [String.replace(/^.+\./, "")(patternStr)],
+                  }),
+                ),
+                (mapping) => AllowedImportPattern.Regular({ mapping }),
+              ),
+          }),
+        ),
+  })
+
 const validateAllowedImports = (
   code: string,
   params: Rules,
@@ -269,13 +331,72 @@ const validateAllowedImports = (
       AstHelper.getAllNodes,
       Array.filterMap((node) =>
         ts.isImportDeclaration(node) ?
-          Option.some(
-            RuleViolation.DisallowedImport({
-              name: "",
-              code: node.parent.getFullText(),
-            }),
+          validateSingleModuleImport(
+            node,
+            pipe(node.moduleSpecifier.getText(), String.replaceAll('"', "")),
+            Array.reduce(
+              params.allowedImports!,
+              AllowedImportPattern.Regular({ mapping: HashMap.empty() }),
+              importPatternToRichType,
+            ),
           )
         : Option.none(),
       ),
       (errors) => Writer.error(null, errors),
     )
+
+const validateSingleModuleImport = (
+  node: ts.ImportDeclaration,
+  module: string,
+  pattern: AllowedImportPattern,
+): Option.Option<RuleViolation> =>
+  AllowedImportPattern.$match(pattern, {
+    AllowAll: () => Option.none(),
+    Regular: ({ mapping }) =>
+      pipe(
+        HashMap.get(mapping, module),
+        Option.match({
+          onSome: (modulePartPattern) =>
+            pipe(
+              modulePartPattern,
+              ModulePartPattern.$match({
+                AllowAll: () => Option.none(),
+                Regular: ({ parts }) =>
+                  pipe(
+                    node,
+                    AstHelper.getAllNodes,
+                    Array.filterMap((n) =>
+                      ts.isIdentifier(n) ?
+                        ts.isImportSpecifier(n.parent) ?
+                          n !== n.parent.getChildAt(0) ?
+                            Option.none() // Ignore import aliases
+                          : !Array.contains(parts, n.getText()) ?
+                            Option.some(n.getText())
+                          : Option.none()
+                        : !Array.contains(parts, n.getText()) ?
+                          Option.some(n.getText())
+                        : Option.none()
+                      : Option.none(),
+                    ),
+                    (unmatched) =>
+                      Array.isNonEmptyArray(unmatched) ?
+                        Option.some(
+                          RuleViolation.DisallowedImport({
+                            name: module,
+                            code: node.getFullText(),
+                          }),
+                        )
+                      : Option.none(),
+                  ),
+              }),
+            ),
+          onNone: () =>
+            Option.some(
+              RuleViolation.DisallowedImport({
+                name: module,
+                code: node.getFullText(),
+              }),
+            ),
+        }),
+      ),
+  })
