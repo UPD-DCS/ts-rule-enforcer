@@ -1,4 +1,4 @@
-import { expect, test } from "vitest"
+import { describe, expect, test } from "vitest"
 import {
   validateCode,
   RuleEnforcerParams,
@@ -7,126 +7,127 @@ import {
 import { Writer } from "../src/writer"
 import { Array, pipe } from "effect"
 
-test("expectedFunctions absent param", () => {
-  const source = `
+describe("expectedFunctions", () => {
+  test("absent param", () => {
+    const source = `
     function f() {
     }
   `
-  const params = RuleEnforcerParams.make({})
+    const params = RuleEnforcerParams.make({})
 
-  const [_, errors] = Writer.run(validateCode(source, params))
-  expect(errors).toStrictEqual([])
-})
+    const [_, errors] = Writer.run(validateCode(source, params))
+    expect(errors).toStrictEqual([])
+  })
 
-test("expectedFunctions empty param", () => {
-  const source = `
+  test("empty param", () => {
+    const source = `
     function f() {
     }
   `
-  const params = RuleEnforcerParams.make({
-    expectedFunctions: [],
+    const params = RuleEnforcerParams.make({
+      expectedFunctions: [],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, params))
+    expect(errors).toStrictEqual([])
   })
 
-  const [_, errors] = Writer.run(validateCode(source, params))
-  expect(errors).toStrictEqual([])
-})
-
-test("expectedFunctions exact", () => {
-  const source = `
+  test("exact", () => {
+    const source = `
     function f() {
     }
   `
-  const params = RuleEnforcerParams.make({
-    expectedFunctions: ["f"],
+    const params = RuleEnforcerParams.make({
+      expectedFunctions: ["f"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, params))
+    expect(errors).toStrictEqual([])
   })
 
-  const [_, errors] = Writer.run(validateCode(source, params))
-  expect(errors).toStrictEqual([])
-})
-
-test("expectedFunctions with extra", () => {
-  const source = `
-    function f() {
-    }
-
-    function g() {
-    }
-  `
-  const params = RuleEnforcerParams.make({
-    expectedFunctions: ["g"],
-  })
-
-  const [_, errors] = Writer.run(validateCode(source, params))
-  expect(errors).toStrictEqual([])
-})
-
-test("expectedFunctions exact arrow", () => {
-  const source = `
-    const f = () => {
-    }
-  `
-  const params = RuleEnforcerParams.make({
-    expectedFunctions: ["f"],
-  })
-
-  const [_, errors] = Writer.run(validateCode(source, params))
-  expect(errors).toStrictEqual([])
-})
-
-test("expectedFunctions with extra arrow", () => {
-  const source = `
-    const f = () => {
-    }
-
-    const g = () => {
-    }
-  `
-  const params = RuleEnforcerParams.make({
-    expectedFunctions: ["g"],
-  })
-
-  const [_, errors] = Writer.run(validateCode(source, params))
-  expect(errors).toStrictEqual([])
-})
-
-test("expectedFunctions missing", () => {
-  const source = `
+  test("with extra", () => {
+    const source = `
     function f() {
     }
 
     function g() {
     }
   `
-  const params = RuleEnforcerParams.make({
-    expectedFunctions: ["h"],
+    const params = RuleEnforcerParams.make({
+      expectedFunctions: ["g"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, params))
+    expect(errors).toStrictEqual([])
   })
 
-  const [_, errors] = Writer.run(validateCode(source, params))
-  expect(errors).toStrictEqual([
-    RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
-  ])
-})
+  test("exact arrow", () => {
+    const source = `
+    const f = () => {
+    }
+  `
+    const params = RuleEnforcerParams.make({
+      expectedFunctions: ["f"],
+    })
 
-test("expectedFunctions missing arrow", () => {
-  const source = `
+    const [_, errors] = Writer.run(validateCode(source, params))
+    expect(errors).toStrictEqual([])
+  })
+
+  test("with extra arrow", () => {
+    const source = `
     const f = () => {
     }
 
     const g = () => {
     }
   `
-  const params = RuleEnforcerParams.make({
-    expectedFunctions: ["h"],
+    const params = RuleEnforcerParams.make({
+      expectedFunctions: ["g"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, params))
+    expect(errors).toStrictEqual([])
   })
 
-  const [_, errors] = Writer.run(validateCode(source, params))
-  expect(errors).toStrictEqual([
-    RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
-  ])
-})
+  test("missing", () => {
+    const source = `
+    function f() {
+    }
 
-test("expectedFunctions missing inside", () => {
-  const source = `
+    function g() {
+    }
+  `
+    const params = RuleEnforcerParams.make({
+      expectedFunctions: ["h"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, params))
+    expect(errors).toStrictEqual([
+      RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
+    ])
+  })
+
+  test("missing arrow", () => {
+    const source = `
+    const f = () => {
+    }
+
+    const g = () => {
+    }
+  `
+    const params = RuleEnforcerParams.make({
+      expectedFunctions: ["h"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, params))
+    expect(errors).toStrictEqual([
+      RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
+    ])
+  })
+
+  test("missing inside", () => {
+    const source = `
   function f() {
     function h() {
     }
@@ -135,18 +136,18 @@ test("expectedFunctions missing inside", () => {
   function g() {
   }
 `
-  const params = RuleEnforcerParams.make({
-    expectedFunctions: ["h"],
+    const params = RuleEnforcerParams.make({
+      expectedFunctions: ["h"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, params))
+    expect(errors).toStrictEqual([
+      RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
+    ])
   })
 
-  const [_, errors] = Writer.run(validateCode(source, params))
-  expect(errors).toStrictEqual([
-    RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
-  ])
-})
-
-test("expectedFunctions missing inside arrow", () => {
-  const source = `
+  test("missing inside arrow", () => {
+    const source = `
   const f = () => {
     const h = () => {
     }
@@ -155,18 +156,20 @@ test("expectedFunctions missing inside arrow", () => {
   const g = () => {
   }
 `
-  const params = RuleEnforcerParams.make({
-    expectedFunctions: ["h"],
-  })
+    const params = RuleEnforcerParams.make({
+      expectedFunctions: ["h"],
+    })
 
-  const [_, errors] = Writer.run(validateCode(source, params))
-  expect(errors).toStrictEqual([
-    RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
-  ])
+    const [_, errors] = Writer.run(validateCode(source, params))
+    expect(errors).toStrictEqual([
+      RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
+    ])
+  })
 })
 
-test("validDeclarations empty", () => {
-  const source = `
+describe("validDeclarations", () => {
+  test("empty", () => {
+    const source = `
   const f = () => {
     let h = () => {
       var x
@@ -179,41 +182,43 @@ test("validDeclarations empty", () => {
   const g = () => {
   }
 `
-  const params = RuleEnforcerParams.make({
-    validDeclarations: [],
+    const params = RuleEnforcerParams.make({
+      validDeclarations: [],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, params))
+
+    const declarationErrors = pipe(
+      errors,
+      Array.filter((error) =>
+        RuleViolation.$is("DisallowedDeclarations")(error),
+      ),
+    )
+
+    pipe(
+      declarationErrors,
+      Array.filter((error) => error.disallowed === "const"),
+      Array.length,
+      (actual) => expect(actual).toStrictEqual(3),
+    )
+
+    pipe(
+      declarationErrors,
+      Array.filter((error) => error.disallowed === "let"),
+      Array.length,
+      (actual) => expect(actual).toStrictEqual(1),
+    )
+
+    pipe(
+      declarationErrors,
+      Array.filter((error) => error.disallowed === "var"),
+      Array.length,
+      (actual) => expect(actual).toStrictEqual(2),
+    )
   })
 
-  const [_, errors] = Writer.run(validateCode(source, params))
-
-  const declarationErrors = pipe(
-    errors,
-    Array.filter((error) => RuleViolation.$is("DisallowedDeclarations")(error)),
-  )
-
-  pipe(
-    declarationErrors,
-    Array.filter((error) => error.disallowed === "const"),
-    Array.length,
-    (actual) => expect(actual).toStrictEqual(3),
-  )
-
-  pipe(
-    declarationErrors,
-    Array.filter((error) => error.disallowed === "let"),
-    Array.length,
-    (actual) => expect(actual).toStrictEqual(1),
-  )
-
-  pipe(
-    declarationErrors,
-    Array.filter((error) => error.disallowed === "var"),
-    Array.length,
-    (actual) => expect(actual).toStrictEqual(2),
-  )
-})
-
-test("validDeclarations const", () => {
-  const source = `
+  test("const", () => {
+    const source = `
   const f = () => {
     let h = () => {
       var x
@@ -226,41 +231,43 @@ test("validDeclarations const", () => {
   const g = () => {
   }
 `
-  const params = RuleEnforcerParams.make({
-    validDeclarations: ["const"],
+    const params = RuleEnforcerParams.make({
+      validDeclarations: ["const"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, params))
+
+    const declarationErrors = pipe(
+      errors,
+      Array.filter((error) =>
+        RuleViolation.$is("DisallowedDeclarations")(error),
+      ),
+    )
+
+    pipe(
+      declarationErrors,
+      Array.filter((error) => error.disallowed === "const"),
+      Array.length,
+      (actual) => expect(actual).toStrictEqual(0),
+    )
+
+    pipe(
+      declarationErrors,
+      Array.filter((error) => error.disallowed === "let"),
+      Array.length,
+      (actual) => expect(actual).toStrictEqual(1),
+    )
+
+    pipe(
+      declarationErrors,
+      Array.filter((error) => error.disallowed === "var"),
+      Array.length,
+      (actual) => expect(actual).toStrictEqual(2),
+    )
   })
 
-  const [_, errors] = Writer.run(validateCode(source, params))
-
-  const declarationErrors = pipe(
-    errors,
-    Array.filter((error) => RuleViolation.$is("DisallowedDeclarations")(error)),
-  )
-
-  pipe(
-    declarationErrors,
-    Array.filter((error) => error.disallowed === "const"),
-    Array.length,
-    (actual) => expect(actual).toStrictEqual(0),
-  )
-
-  pipe(
-    declarationErrors,
-    Array.filter((error) => error.disallowed === "let"),
-    Array.length,
-    (actual) => expect(actual).toStrictEqual(1),
-  )
-
-  pipe(
-    declarationErrors,
-    Array.filter((error) => error.disallowed === "var"),
-    Array.length,
-    (actual) => expect(actual).toStrictEqual(2),
-  )
-})
-
-test("validDeclarations let", () => {
-  const source = `
+  test("let", () => {
+    const source = `
   const f = () => {
     let h = () => {
       var x
@@ -273,41 +280,43 @@ test("validDeclarations let", () => {
   const g = () => {
   }
 `
-  const params = RuleEnforcerParams.make({
-    validDeclarations: ["let"],
+    const params = RuleEnforcerParams.make({
+      validDeclarations: ["let"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, params))
+
+    const declarationErrors = pipe(
+      errors,
+      Array.filter((error) =>
+        RuleViolation.$is("DisallowedDeclarations")(error),
+      ),
+    )
+
+    pipe(
+      declarationErrors,
+      Array.filter((error) => error.disallowed === "const"),
+      Array.length,
+      (actual) => expect(actual).toStrictEqual(3),
+    )
+
+    pipe(
+      declarationErrors,
+      Array.filter((error) => error.disallowed === "let"),
+      Array.length,
+      (actual) => expect(actual).toStrictEqual(0),
+    )
+
+    pipe(
+      declarationErrors,
+      Array.filter((error) => error.disallowed === "var"),
+      Array.length,
+      (actual) => expect(actual).toStrictEqual(2),
+    )
   })
 
-  const [_, errors] = Writer.run(validateCode(source, params))
-
-  const declarationErrors = pipe(
-    errors,
-    Array.filter((error) => RuleViolation.$is("DisallowedDeclarations")(error)),
-  )
-
-  pipe(
-    declarationErrors,
-    Array.filter((error) => error.disallowed === "const"),
-    Array.length,
-    (actual) => expect(actual).toStrictEqual(3),
-  )
-
-  pipe(
-    declarationErrors,
-    Array.filter((error) => error.disallowed === "let"),
-    Array.length,
-    (actual) => expect(actual).toStrictEqual(0),
-  )
-
-  pipe(
-    declarationErrors,
-    Array.filter((error) => error.disallowed === "var"),
-    Array.length,
-    (actual) => expect(actual).toStrictEqual(2),
-  )
-})
-
-test("validDeclarations var", () => {
-  const source = `
+  test("var", () => {
+    const source = `
   const f = () => {
     let h = () => {
       var x
@@ -320,41 +329,43 @@ test("validDeclarations var", () => {
   const g = () => {
   }
 `
-  const params = RuleEnforcerParams.make({
-    validDeclarations: ["var"],
+    const params = RuleEnforcerParams.make({
+      validDeclarations: ["var"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, params))
+
+    const declarationErrors = pipe(
+      errors,
+      Array.filter((error) =>
+        RuleViolation.$is("DisallowedDeclarations")(error),
+      ),
+    )
+
+    pipe(
+      declarationErrors,
+      Array.filter((error) => error.disallowed === "const"),
+      Array.length,
+      (actual) => expect(actual).toStrictEqual(3),
+    )
+
+    pipe(
+      declarationErrors,
+      Array.filter((error) => error.disallowed === "let"),
+      Array.length,
+      (actual) => expect(actual).toStrictEqual(1),
+    )
+
+    pipe(
+      declarationErrors,
+      Array.filter((error) => error.disallowed === "var"),
+      Array.length,
+      (actual) => expect(actual).toStrictEqual(0),
+    )
   })
 
-  const [_, errors] = Writer.run(validateCode(source, params))
-
-  const declarationErrors = pipe(
-    errors,
-    Array.filter((error) => RuleViolation.$is("DisallowedDeclarations")(error)),
-  )
-
-  pipe(
-    declarationErrors,
-    Array.filter((error) => error.disallowed === "const"),
-    Array.length,
-    (actual) => expect(actual).toStrictEqual(3),
-  )
-
-  pipe(
-    declarationErrors,
-    Array.filter((error) => error.disallowed === "let"),
-    Array.length,
-    (actual) => expect(actual).toStrictEqual(1),
-  )
-
-  pipe(
-    declarationErrors,
-    Array.filter((error) => error.disallowed === "var"),
-    Array.length,
-    (actual) => expect(actual).toStrictEqual(0),
-  )
-})
-
-test("validDeclarations const let", () => {
-  const source = `
+  test("const let", () => {
+    const source = `
   const f = () => {
     let h = () => {
       var x
@@ -367,99 +378,109 @@ test("validDeclarations const let", () => {
   const g = () => {
   }
 `
-  const params = RuleEnforcerParams.make({
-    validDeclarations: ["const", "let"],
+    const params = RuleEnforcerParams.make({
+      validDeclarations: ["const", "let"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, params))
+
+    const declarationErrors = pipe(
+      errors,
+      Array.filter((error) =>
+        RuleViolation.$is("DisallowedDeclarations")(error),
+      ),
+    )
+
+    pipe(
+      declarationErrors,
+      Array.filter((error) => error.disallowed === "const"),
+      Array.length,
+      (actual) => expect(actual).toStrictEqual(0),
+    )
+
+    pipe(
+      declarationErrors,
+      Array.filter((error) => error.disallowed === "let"),
+      Array.length,
+      (actual) => expect(actual).toStrictEqual(0),
+    )
+
+    pipe(
+      declarationErrors,
+      Array.filter((error) => error.disallowed === "var"),
+      Array.length,
+      (actual) => expect(actual).toStrictEqual(2),
+    )
   })
-
-  const [_, errors] = Writer.run(validateCode(source, params))
-
-  const declarationErrors = pipe(
-    errors,
-    Array.filter((error) => RuleViolation.$is("DisallowedDeclarations")(error)),
-  )
-
-  pipe(
-    declarationErrors,
-    Array.filter((error) => error.disallowed === "const"),
-    Array.length,
-    (actual) => expect(actual).toStrictEqual(0),
-  )
-
-  pipe(
-    declarationErrors,
-    Array.filter((error) => error.disallowed === "let"),
-    Array.length,
-    (actual) => expect(actual).toStrictEqual(0),
-  )
-
-  pipe(
-    declarationErrors,
-    Array.filter((error) => error.disallowed === "var"),
-    Array.length,
-    (actual) => expect(actual).toStrictEqual(2),
-  )
 })
 
-test("disallow-reassignment simple", () => {
-  const source = `
+describe("disallow-reassignment", () => {
+  test("simple", () => {
+    const source = `
   let y = 1
   y = 2
 `
-  const params = RuleEnforcerParams.make({
-    disallow: ["reassignment"],
+    const params = RuleEnforcerParams.make({
+      disallow: ["reassignment"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, params))
+
+    const relevantErrors = pipe(
+      errors,
+      Array.filter((error) =>
+        RuleViolation.$is("DisallowedReassignment")(error),
+      ),
+    )
+
+    expect(Array.length(relevantErrors)).toStrictEqual(1)
   })
 
-  const [_, errors] = Writer.run(validateCode(source, params))
-
-  const relevantErrors = pipe(
-    errors,
-    Array.filter((error) => RuleViolation.$is("DisallowedReassignment")(error)),
-  )
-
-  expect(Array.length(relevantErrors)).toStrictEqual(1)
-})
-
-test("disallow-reassignment none", () => {
-  const source = `
+  test("none", () => {
+    const source = `
   var x = 0
   let y = 1
   const z = 2
 `
-  const params = RuleEnforcerParams.make({
-    disallow: ["reassignment"],
+    const params = RuleEnforcerParams.make({
+      disallow: ["reassignment"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, params))
+
+    const relevantErrors = pipe(
+      errors,
+      Array.filter((error) =>
+        RuleViolation.$is("DisallowedReassignment")(error),
+      ),
+    )
+
+    expect(Array.length(relevantErrors)).toStrictEqual(0)
   })
 
-  const [_, errors] = Writer.run(validateCode(source, params))
-
-  const relevantErrors = pipe(
-    errors,
-    Array.filter((error) => RuleViolation.$is("DisallowedReassignment")(error)),
-  )
-
-  expect(Array.length(relevantErrors)).toStrictEqual(0)
-})
-
-test("disallow-reassignment prop reassignment", () => {
-  const source = `
+  test("prop reassignment", () => {
+    const source = `
   let w = {a: 1}
   w.a = 2
 `
-  const params = RuleEnforcerParams.make({
-    disallow: ["reassignment"],
+    const params = RuleEnforcerParams.make({
+      disallow: ["reassignment"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, params))
+
+    const relevantErrors = pipe(
+      errors,
+      Array.filter((error) =>
+        RuleViolation.$is("DisallowedReassignment")(error),
+      ),
+    )
+
+    expect(Array.length(relevantErrors)).toStrictEqual(1)
   })
 
-  const [_, errors] = Writer.run(validateCode(source, params))
-
-  const relevantErrors = pipe(
-    errors,
-    Array.filter((error) => RuleViolation.$is("DisallowedReassignment")(error)),
-  )
-
-  expect(Array.length(relevantErrors)).toStrictEqual(1)
-})
-
-test("disallow-reassignment compound", () => {
-  const source = `
+  test("compound", () => {
+    const source = `
   let x = 1, y = 2
   y = 3
   let z = 4
@@ -470,16 +491,19 @@ test("disallow-reassignment compound", () => {
   const c = x === y
   const d = x === y
 `
-  const params = RuleEnforcerParams.make({
-    disallow: ["reassignment"],
+    const params = RuleEnforcerParams.make({
+      disallow: ["reassignment"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, params))
+
+    const relevantErrors = pipe(
+      errors,
+      Array.filter((error) =>
+        RuleViolation.$is("DisallowedReassignment")(error),
+      ),
+    )
+
+    expect(Array.length(relevantErrors)).toStrictEqual(2)
   })
-
-  const [_, errors] = Writer.run(validateCode(source, params))
-
-  const relevantErrors = pipe(
-    errors,
-    Array.filter((error) => RuleViolation.$is("DisallowedReassignment")(error)),
-  )
-
-  expect(Array.length(relevantErrors)).toStrictEqual(2)
 })
