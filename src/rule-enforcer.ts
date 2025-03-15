@@ -12,7 +12,7 @@ export type RuleViolation = Data.TaggedEnum<{
 
 export const RuleViolation = Data.taggedEnum<RuleViolation>()
 
-export const RuleEnforcerParams = S.Struct({
+export const Rules = S.Struct({
   expectedFunctions: S.optional(S.Array(S.String)),
   validDeclarations: S.optional(
     S.Array(S.Union(S.Literal("const"), S.Literal("let"), S.Literal("var"))),
@@ -24,25 +24,25 @@ export const RuleEnforcerParams = S.Struct({
   ),
 })
 
-export type RuleEnforcerParams = typeof RuleEnforcerParams.Type
+export type Rules = typeof Rules.Type
 
 export const validateCode = (
   code: string,
-  params: RuleEnforcerParams,
+  rules: Rules,
 ): Writer<null, RuleViolation> =>
   pipe(
-    validateExpectedFunctions(code, params),
-    Writer.flatMap(() => validateValidDeclarations(code, params)),
-    Writer.flatMap(() => validateDisallowReassignment(code, params)),
+    validateExpectedFunctions(code, rules),
+    Writer.flatMap(() => validateValidDeclarations(code, rules)),
+    Writer.flatMap(() => validateDisallowReassignment(code, rules)),
   )
 
 const validateExpectedFunctions = (
   code: string,
-  params: RuleEnforcerParams,
+  rules: Rules,
 ): Writer<null, RuleViolation> =>
   (
-    params.expectedFunctions === undefined ||
-    Array.isEmptyReadonlyArray(params.expectedFunctions)
+    rules.expectedFunctions === undefined ||
+    Array.isEmptyReadonlyArray(rules.expectedFunctions)
   ) ?
     Writer.success(null)
   : pipe(
@@ -53,7 +53,7 @@ const validateExpectedFunctions = (
       Array.filterMap((opt) => opt),
       (namesFound) =>
         pipe(
-          params.expectedFunctions as string[],
+          rules.expectedFunctions as string[],
           Array.filter((required) => !Array.contains(namesFound, required)),
         ),
       (unmatchedRequired) =>
@@ -68,7 +68,7 @@ const validateExpectedFunctions = (
 
 const validateValidDeclarations = (
   code: string,
-  params: RuleEnforcerParams,
+  params: Rules,
 ): Writer<null, RuleViolation> =>
   params.validDeclarations === undefined ?
     Writer.success(null)
@@ -135,7 +135,7 @@ const validateAbsentVar = (nodes: ts.Node[]): Writer<null, RuleViolation> =>
 
 const validateDisallowReassignment = (
   code: string,
-  params: RuleEnforcerParams,
+  params: Rules,
 ): Writer<null, RuleViolation> =>
   (
     params.disallow === undefined ||

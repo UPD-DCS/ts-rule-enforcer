@@ -1,9 +1,5 @@
 import { describe, expect, test } from "vitest"
-import {
-  validateCode,
-  RuleEnforcerParams,
-  RuleViolation,
-} from "../src/rule-enforcer"
+import { validateCode, Rules, RuleViolation } from "../src/rule-enforcer"
 import { Writer } from "../src/writer"
 import { Array, pipe } from "effect"
 
@@ -13,7 +9,7 @@ describe("expectedFunctions", () => {
     function f() {
     }
   `
-    const params = RuleEnforcerParams.make({})
+    const params = Rules.make({})
 
     const [_, errors] = Writer.run(validateCode(source, params))
     expect(errors).toStrictEqual([])
@@ -24,7 +20,7 @@ describe("expectedFunctions", () => {
     function f() {
     }
   `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       expectedFunctions: [],
     })
 
@@ -37,7 +33,7 @@ describe("expectedFunctions", () => {
     function f() {
     }
   `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       expectedFunctions: ["f"],
     })
 
@@ -53,7 +49,7 @@ describe("expectedFunctions", () => {
     function g() {
     }
   `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       expectedFunctions: ["g"],
     })
 
@@ -66,7 +62,7 @@ describe("expectedFunctions", () => {
     const f = () => {
     }
   `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       expectedFunctions: ["f"],
     })
 
@@ -82,7 +78,7 @@ describe("expectedFunctions", () => {
     const g = () => {
     }
   `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       expectedFunctions: ["g"],
     })
 
@@ -98,7 +94,7 @@ describe("expectedFunctions", () => {
     function g() {
     }
   `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       expectedFunctions: ["h"],
     })
 
@@ -116,7 +112,7 @@ describe("expectedFunctions", () => {
     const g = () => {
     }
   `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       expectedFunctions: ["h"],
     })
 
@@ -136,7 +132,7 @@ describe("expectedFunctions", () => {
   function g() {
   }
 `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       expectedFunctions: ["h"],
     })
 
@@ -156,7 +152,7 @@ describe("expectedFunctions", () => {
   const g = () => {
   }
 `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       expectedFunctions: ["h"],
     })
 
@@ -182,7 +178,7 @@ describe("validDeclarations", () => {
   const g = () => {
   }
 `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       validDeclarations: [],
     })
 
@@ -231,7 +227,7 @@ describe("validDeclarations", () => {
   const g = () => {
   }
 `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       validDeclarations: ["const"],
     })
 
@@ -280,7 +276,7 @@ describe("validDeclarations", () => {
   const g = () => {
   }
 `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       validDeclarations: ["let"],
     })
 
@@ -329,7 +325,7 @@ describe("validDeclarations", () => {
   const g = () => {
   }
 `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       validDeclarations: ["var"],
     })
 
@@ -378,7 +374,7 @@ describe("validDeclarations", () => {
   const g = () => {
   }
 `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       validDeclarations: ["const", "let"],
     })
 
@@ -420,7 +416,7 @@ describe("disallow-reassignment", () => {
   let y = 1
   y = 2
 `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       disallow: ["reassignment"],
     })
 
@@ -442,7 +438,7 @@ describe("disallow-reassignment", () => {
   let y = 1
   const z = 2
 `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       disallow: ["reassignment"],
     })
 
@@ -463,7 +459,7 @@ describe("disallow-reassignment", () => {
   let w = {a: 1}
   w.a = 2
 `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       disallow: ["reassignment"],
     })
 
@@ -491,7 +487,7 @@ describe("disallow-reassignment", () => {
   const c = x === y
   const d = x === y
 `
-    const params = RuleEnforcerParams.make({
+    const params = Rules.make({
       disallow: ["reassignment"],
     })
 
