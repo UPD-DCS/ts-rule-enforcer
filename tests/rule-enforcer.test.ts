@@ -926,3 +926,34 @@ c.log("2")
     expect(Array.length(relevantErrors)).toStrictEqual(2)
   })
 })
+
+describe("disallow: helper-functions", () => {
+  test("all kinds", () => {
+    const source = `
+const f = () => {
+}
+
+const g1 = () => {
+  function g2() {
+  }
+}
+
+function g3() {
+  const g4 = () => {}
+}
+`
+    const rules = Rules.make({
+      expectedFunctions: ["f"],
+      disallow: ["helper-functions"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+
+    const relevantErrors = pipe(
+      errors,
+      Array.filter((error) => RuleViolation.$is("DisallowedHelperFunctions")(error)),
+    )
+
+    expect(Array.length(relevantErrors)).toStrictEqual(4)
+  })
+})

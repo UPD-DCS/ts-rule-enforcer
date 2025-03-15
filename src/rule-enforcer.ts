@@ -17,6 +17,7 @@ export const Rules = S.Struct({
         S.Literal("loops"),
         S.Literal("if-statements"),
         S.Literal("console"),
+        S.Literal("helper-functions"),
       ),
     ),
   ),
@@ -30,6 +31,7 @@ export type RuleViolation = Data.TaggedEnum<{
   DisallowedIfStatements: { code: string }
   DisallowedImport: { name: string; code: string }
   DisallowedConsole: { code: string }
+  DisallowedHelperFunctions: { code: string }
 }>
 
 export const RuleViolation = Data.taggedEnum<RuleViolation>()
@@ -48,6 +50,7 @@ export const validateCode = (
     Writer.flatMap(() => validateDisallowIfStatements(code, rules)),
     Writer.flatMap(() => validateAllowedImports(code, rules)),
     Writer.flatMap(() => validateDisallowConsole(code, rules)),
+    Writer.flatMap(() => validateDisallowHelperFunctions(code, rules)),
   )
 
 const validateExpectedFunctions = (
@@ -422,6 +425,42 @@ const validateDisallowConsole = (
             }),
           )
         : Option.none(),
+      ),
+      (errors) => Writer.error(null, errors),
+    )
+
+const validateDisallowHelperFunctions = (
+  code: string,
+  rules: Rules,
+): Writer<null, RuleViolation> =>
+  (
+    rules.expectedFunctions === undefined ||
+    rules.disallow === undefined ||
+    !Array.contains(rules.disallow, "helper-functions")
+  ) ?
+    Writer.success(null)
+  : pipe(
+      code,
+      AstHelper.parseCode,
+      AstHelper.getAllNodes,
+      Array.filterMap((n) =>
+        pipe(
+          AstHelper.getFunctionName(n),
+          Option.match({
+            onSome: (functionName) =>
+              (
+                (ts.isFunctionDeclaration(n) || ts.isVariableDeclaration(n)) &&
+                !pipe(rules.expectedFunctions!, Array.contains(functionName))
+              ) ?
+                Option.some(
+                  RuleViolation.DisallowedHelperFunctions({
+                    code: n.getText(),
+                  }),
+                )
+              : Option.none(),
+            onNone: () => Option.none(),
+          }),
+        ),
       ),
       (errors) => Writer.error(null, errors),
     )
