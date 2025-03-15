@@ -161,6 +161,43 @@ describe("expectedFunctions", () => {
       RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
     ])
   })
+
+  test("multiple required good", () => {
+    const source = `
+  function f() {
+  }
+
+  function g() {
+  }
+
+  function h() {
+  }
+`
+    const rules = Rules.make({
+      expectedFunctions: ["h", "g"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+    expect(errors).toStrictEqual([])
+  })
+
+  test("multiple required bad", () => {
+    const source = `
+  function f() {
+  }
+
+  function h() {
+  }
+`
+    const rules = Rules.make({
+      expectedFunctions: ["h", "g"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+    expect(errors).toStrictEqual([
+      RuleViolation.MissingExpectedFunction({ missing: ["g"] }),
+    ])
+  })
 })
 
 describe("validDeclarations", () => {
@@ -951,7 +988,9 @@ function g3() {
 
     const relevantErrors = pipe(
       errors,
-      Array.filter((error) => RuleViolation.$is("DisallowedHelperFunctions")(error)),
+      Array.filter((error) =>
+        RuleViolation.$is("DisallowedHelperFunctions")(error),
+      ),
     )
 
     expect(Array.length(relevantErrors)).toStrictEqual(4)
