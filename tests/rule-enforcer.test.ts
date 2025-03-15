@@ -410,7 +410,7 @@ describe("validDeclarations", () => {
   })
 })
 
-describe("disallow-reassignment", () => {
+describe("disallow: reassignment", () => {
   test("simple", () => {
     const source = `
   let y = 1
@@ -619,5 +619,55 @@ describe("disallow-reassignment", () => {
     )
 
     expect(Array.length(relevantErrors)).toStrictEqual(14)
+  })
+})
+
+describe("disallow: loops", () => {
+  test("all kinds", () => {
+    const source = `
+for (let i = 0; i < 10; i++) {
+  while (x !== 0) {
+    do {
+      do {
+for (const y of [1, 2, 3]) {
+
+}
+
+for (const y of [1, 2, 3]) {
+
+}
+
+for (const y of [1, 2, 3]) {
+
+}
+      } while (x <= 2);
+    } while (x <= 2);
+  }
+}
+
+while (x !== 0) {
+}
+
+do {
+
+} while (x <= 2);
+
+
+for (const y of [1, 2, 3]) {
+
+}
+`
+    const rules = Rules.make({
+      disallow: ["loops"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+
+    const relevantErrors = pipe(
+      errors,
+      Array.filter((error) => RuleViolation.$is("DisallowedLoops")(error)),
+    )
+
+    expect(Array.length(relevantErrors)).toStrictEqual(10)
   })
 })

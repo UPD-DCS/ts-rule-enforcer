@@ -8,6 +8,7 @@ export type RuleViolation = Data.TaggedEnum<{
   MissingExpectedFunction: { missing: NonEmptyReadonlyArray<string> }
   DisallowedDeclarations: { disallowed: string; code: string }
   DisallowedReassignment: { code: string }
+  DisallowedLoops: { code: string }
 }>
 
 export const RuleViolation = Data.taggedEnum<RuleViolation>()
@@ -19,7 +20,10 @@ export const Rules = S.Struct({
   ),
   disallow: S.optional(
     S.Array(
-      S.Literal("reassignment"), //
+      S.Union(
+        S.Literal("reassignment"), //
+        S.Literal("loops"),
+      ),
     ),
   ),
 })
@@ -34,6 +38,7 @@ export const validateCode = (
     validateExpectedFunctions(code, rules),
     Writer.flatMap(() => validateValidDeclarations(code, rules)),
     Writer.flatMap(() => validateDisallowReassignment(code, rules)),
+    Writer.flatMap(() => validateDisallowLoops(code, rules)),
   )
 
 const validateExpectedFunctions = (
@@ -181,6 +186,38 @@ const validateDisallowReassignment = (
         ) ?
           Option.some(
             RuleViolation.DisallowedReassignment({
+              code: token.parent.getFullText(),
+            }),
+          )
+        : Option.none(),
+      ),
+      (errors) => Writer.error(null, errors),
+    )
+
+const validateDisallowLoops = (
+  code: string,
+  params: Rules,
+): Writer<null, RuleViolation> =>
+  params.disallow === undefined || !Array.contains(params.disallow, "loops") ?
+    Writer.success(null)
+  : pipe(
+      code,
+      AstHelper.parseCode,
+      AstHelper.getAllNodes,
+      Array.filterMap((token) =>
+        (
+          Array.contains(
+            [
+              ts.SyntaxKind.ForStatement,
+              ts.SyntaxKind.WhileStatement,
+              ts.SyntaxKind.DoStatement,
+              ts.SyntaxKind.ForOfStatement,
+            ],
+            token.kind,
+          )
+        ) ?
+          Option.some(
+            RuleViolation.DisallowedLoops({
               code: token.parent.getFullText(),
             }),
           )
