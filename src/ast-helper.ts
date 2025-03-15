@@ -9,14 +9,45 @@ export const parseCode = (code: string) =>
 export const getAllTopLevelFunctions = (node: ts.Node): ts.Node[] =>
   pipe(
     node.getChildren(),
-    Array.filterMap((child) =>
-      ts.isFunctionDeclaration(child) ? Option.some(child)
-      : ts.isArrowFunction(child) ? Option.some(child.parent)
-      : Option.none(),
+    Array.flatMap((child) =>
+      ts.isFunctionDeclaration(child) ? [child]
+      : ts.isVariableStatement(child) ?
+        pipe(
+          Option.Do.pipe(
+            Option.flatMap(() =>
+              Array.findFirst(
+                child.getChildren(),
+                (c) => c.kind === ts.SyntaxKind.VariableDeclarationList,
+              ),
+            ),
+            Option.flatMap((list) =>
+              Array.findFirst(
+                list.getChildren(),
+                (c) => c.kind === ts.SyntaxKind.SyntaxList,
+              ),
+            ),
+            Option.map((syntaxList) =>
+              pipe(
+                syntaxList.getChildren(),
+                Array.filter(ts.isVariableDeclaration),
+              ),
+            ),
+          ),
+          Option.getOrElse(() => []),
+        )
+      : [],
     ),
   )
 
 export const getFunctionName = (node: ts.Node): Option.Option<string> =>
-  ts.isFunctionDeclaration(node) || ts.isArrowFunction(node) ?
-    Option.fromNullable(node.name?.getText())
+  ts.isFunctionDeclaration(node) ? Option.fromNullable(node.name?.getText())
+  : ts.isArrowFunction(node) ?
+    Option.fromNullable(
+      ts.isVariableDeclaration(node.parent) ? node.parent.name.getText() : null,
+    )
+  : (
+    ts.isVariableDeclaration(node) &&
+    Array.length(Array.filter(node.getChildren(), ts.isArrowFunction)) > 0
+  ) ?
+    Option.some(node.name.getText())
   : Option.none()

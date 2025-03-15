@@ -31,13 +31,13 @@ const validateExpectedFunctions = (
       AstHelper.getAllTopLevelFunctions,
       Array.map(AstHelper.getFunctionName),
       Array.filterMap((opt) => opt),
-      (names) =>
+      (namesFound) =>
         pipe(
           params.expectedFunctions as string[],
-          Array.filter((expected) => !Array.contains(names, expected)),
+          Array.filter((required) => !Array.contains(namesFound, required)),
         ),
-      (unmatched) =>
-        Array.isNonEmptyReadonlyArray(unmatched) ?
-          Either.left(`Did not find: ${unmatched}`)
+      (unmatchedRequired) =>
+        Array.isNonEmptyReadonlyArray(unmatchedRequired) ?
+          Either.left(`Did not find: ${unmatchedRequired}`)
         : Either.right(null),
     )
