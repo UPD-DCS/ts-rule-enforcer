@@ -4,21 +4,12 @@ import { Writer } from "./writer"
 import { NonEmptyReadonlyArray } from "effect/Array"
 import ts from "typescript"
 
-export type RuleViolation = Data.TaggedEnum<{
-  MissingExpectedFunction: { missing: NonEmptyReadonlyArray<string> }
-  DisallowedDeclarations: { disallowed: string; code: string }
-  DisallowedReassignment: { code: string }
-  DisallowedLoops: { code: string }
-  DisallowedIfStatements: { code: string }
-}>
-
-export const RuleViolation = Data.taggedEnum<RuleViolation>()
-
 export const Rules = S.Struct({
   expectedFunctions: S.optional(S.Array(S.String)),
   validDeclarations: S.optional(
     S.Array(S.Union(S.Literal("const"), S.Literal("let"), S.Literal("var"))),
   ),
+  allowedImports: S.optional(S.Array(S.String)),
   disallow: S.optional(
     S.Array(
       S.Union(
@@ -29,6 +20,17 @@ export const Rules = S.Struct({
     ),
   ),
 })
+
+export type RuleViolation = Data.TaggedEnum<{
+  MissingExpectedFunction: { missing: NonEmptyReadonlyArray<string> }
+  DisallowedDeclarations: { disallowed: string; code: string }
+  DisallowedReassignment: { code: string }
+  DisallowedLoops: { code: string }
+  DisallowedIfStatements: { code: string }
+  DisallowedImport: { name: string; code: string }
+}>
+
+export const RuleViolation = Data.taggedEnum<RuleViolation>()
 
 export type Rules = typeof Rules.Type
 
@@ -42,6 +44,7 @@ export const validateCode = (
     Writer.flatMap(() => validateDisallowReassignment(code, rules)),
     Writer.flatMap(() => validateDisallowLoops(code, rules)),
     Writer.flatMap(() => validateDisallowIfStatements(code, rules)),
+    Writer.flatMap(() => validateAllowedImports(code, rules)),
   )
 
 const validateExpectedFunctions = (
@@ -247,6 +250,29 @@ const validateDisallowIfStatements = (
           Option.some(
             RuleViolation.DisallowedIfStatements({
               code: token.parent.getFullText(),
+            }),
+          )
+        : Option.none(),
+      ),
+      (errors) => Writer.error(null, errors),
+    )
+
+const validateAllowedImports = (
+  code: string,
+  params: Rules,
+): Writer<null, RuleViolation> =>
+  params.allowedImports === undefined ?
+    Writer.success(null)
+  : pipe(
+      code,
+      AstHelper.parseCode,
+      AstHelper.getAllNodes,
+      Array.filterMap((node) =>
+        ts.isImportDeclaration(node) ?
+          Option.some(
+            RuleViolation.DisallowedImport({
+              name: "",
+              code: node.parent.getFullText(),
             }),
           )
         : Option.none(),
