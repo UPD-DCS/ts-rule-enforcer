@@ -1,0 +1,29 @@
+{
+  "name": "typescript-rule-enforcer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.5.2",
+  "devDependencies": {
+    "vitest": "^3.0.8"
+  },
+  "prettier": {
+    "semi": false,
+    "experimentalTernaries": true
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "dependencies": {
+    "effect": "^3.13.10",
+    "typescript": "^5.8.2"
+  }
+}
