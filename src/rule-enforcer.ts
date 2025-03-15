@@ -13,7 +13,7 @@ export const Rules = S.Struct({
   disallow: S.optional(
     S.Array(
       S.Union(
-        S.Literal("reassignment"), //
+        S.Literal("reassignment"),
         S.Literal("loops"),
         S.Literal("if-statements"),
         S.Literal("console"),
