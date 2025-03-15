@@ -4,27 +4,27 @@ import { Writer } from "../src/writer"
 import { Array, pipe } from "effect"
 
 describe("expectedFunctions", () => {
-  test("absent param", () => {
+  test("absent rule", () => {
     const source = `
     function f() {
     }
   `
-    const params = Rules.make({})
+    const rules = Rules.make({})
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
     expect(errors).toStrictEqual([])
   })
 
-  test("empty param", () => {
+  test("empty rule", () => {
     const source = `
     function f() {
     }
   `
-    const params = Rules.make({
+    const rules = Rules.make({
       expectedFunctions: [],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
     expect(errors).toStrictEqual([])
   })
 
@@ -33,11 +33,11 @@ describe("expectedFunctions", () => {
     function f() {
     }
   `
-    const params = Rules.make({
+    const rules = Rules.make({
       expectedFunctions: ["f"],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
     expect(errors).toStrictEqual([])
   })
 
@@ -49,11 +49,11 @@ describe("expectedFunctions", () => {
     function g() {
     }
   `
-    const params = Rules.make({
+    const rules = Rules.make({
       expectedFunctions: ["g"],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
     expect(errors).toStrictEqual([])
   })
 
@@ -62,11 +62,11 @@ describe("expectedFunctions", () => {
     const f = () => {
     }
   `
-    const params = Rules.make({
+    const rules = Rules.make({
       expectedFunctions: ["f"],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
     expect(errors).toStrictEqual([])
   })
 
@@ -78,11 +78,11 @@ describe("expectedFunctions", () => {
     const g = () => {
     }
   `
-    const params = Rules.make({
+    const rules = Rules.make({
       expectedFunctions: ["g"],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
     expect(errors).toStrictEqual([])
   })
 
@@ -94,11 +94,11 @@ describe("expectedFunctions", () => {
     function g() {
     }
   `
-    const params = Rules.make({
+    const rules = Rules.make({
       expectedFunctions: ["h"],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
     expect(errors).toStrictEqual([
       RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
     ])
@@ -112,11 +112,11 @@ describe("expectedFunctions", () => {
     const g = () => {
     }
   `
-    const params = Rules.make({
+    const rules = Rules.make({
       expectedFunctions: ["h"],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
     expect(errors).toStrictEqual([
       RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
     ])
@@ -132,11 +132,11 @@ describe("expectedFunctions", () => {
   function g() {
   }
 `
-    const params = Rules.make({
+    const rules = Rules.make({
       expectedFunctions: ["h"],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
     expect(errors).toStrictEqual([
       RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
     ])
@@ -152,11 +152,11 @@ describe("expectedFunctions", () => {
   const g = () => {
   }
 `
-    const params = Rules.make({
+    const rules = Rules.make({
       expectedFunctions: ["h"],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
     expect(errors).toStrictEqual([
       RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
     ])
@@ -178,11 +178,11 @@ describe("validDeclarations", () => {
   const g = () => {
   }
 `
-    const params = Rules.make({
+    const rules = Rules.make({
       validDeclarations: [],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
 
     const declarationErrors = pipe(
       errors,
@@ -227,11 +227,11 @@ describe("validDeclarations", () => {
   const g = () => {
   }
 `
-    const params = Rules.make({
+    const rules = Rules.make({
       validDeclarations: ["const"],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
 
     const declarationErrors = pipe(
       errors,
@@ -276,11 +276,11 @@ describe("validDeclarations", () => {
   const g = () => {
   }
 `
-    const params = Rules.make({
+    const rules = Rules.make({
       validDeclarations: ["let"],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
 
     const declarationErrors = pipe(
       errors,
@@ -325,11 +325,11 @@ describe("validDeclarations", () => {
   const g = () => {
   }
 `
-    const params = Rules.make({
+    const rules = Rules.make({
       validDeclarations: ["var"],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
 
     const declarationErrors = pipe(
       errors,
@@ -374,11 +374,11 @@ describe("validDeclarations", () => {
   const g = () => {
   }
 `
-    const params = Rules.make({
+    const rules = Rules.make({
       validDeclarations: ["const", "let"],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
 
     const declarationErrors = pipe(
       errors,
@@ -416,11 +416,11 @@ describe("disallow-reassignment", () => {
   let y = 1
   y = 2
 `
-    const params = Rules.make({
+    const rules = Rules.make({
       disallow: ["reassignment"],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
 
     const relevantErrors = pipe(
       errors,
@@ -438,11 +438,11 @@ describe("disallow-reassignment", () => {
   let y = 1
   const z = 2
 `
-    const params = Rules.make({
+    const rules = Rules.make({
       disallow: ["reassignment"],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
 
     const relevantErrors = pipe(
       errors,
@@ -459,11 +459,11 @@ describe("disallow-reassignment", () => {
   let w = {a: 1}
   w.a = 2
 `
-    const params = Rules.make({
+    const rules = Rules.make({
       disallow: ["reassignment"],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
 
     const relevantErrors = pipe(
       errors,
@@ -487,11 +487,11 @@ describe("disallow-reassignment", () => {
   const c = x === y
   const d = x === y
 `
-    const params = Rules.make({
+    const rules = Rules.make({
       disallow: ["reassignment"],
     })
 
-    const [_, errors] = Writer.run(validateCode(source, params))
+    const [_, errors] = Writer.run(validateCode(source, rules))
 
     const relevantErrors = pipe(
       errors,
