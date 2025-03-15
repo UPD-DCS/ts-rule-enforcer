@@ -586,4 +586,38 @@ describe("disallow-reassignment", () => {
 
     expect(Array.length(relevantErrors)).toStrictEqual(1)
   })
+
+  test("all assignment shorthand", () => {
+    const source = `
+  let y = 1
+  y += 2
+  y -= 2
+  y *= 2
+  y /= 2
+  y |= 2
+  y ||= 2
+  y &= 2
+  y &&= 2
+  y ^= 2
+  y %= 2
+  y ??= 2
+  y <<= 2
+  y >>= 2
+  y >>>= 2
+`
+    const rules = Rules.make({
+      disallow: ["reassignment"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+
+    const relevantErrors = pipe(
+      errors,
+      Array.filter((error) =>
+        RuleViolation.$is("DisallowedReassignment")(error),
+      ),
+    )
+
+    expect(Array.length(relevantErrors)).toStrictEqual(14)
+  })
 })

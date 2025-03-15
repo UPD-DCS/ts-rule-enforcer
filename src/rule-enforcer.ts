@@ -146,29 +146,45 @@ const validateDisallowReassignment = (
       code,
       AstHelper.parseCode,
       AstHelper.getAllNodes,
-      Array.filter(
-        (node) =>
-          node.kind === ts.SyntaxKind.EqualsToken ||
-          node.kind === ts.SyntaxKind.PlusPlusToken ||
-          node.kind === ts.SyntaxKind.MinusMinusToken,
-      ),
       Array.filterMap((token) =>
         (
-          token.kind === ts.SyntaxKind.PlusPlusToken ||
-          token.kind === ts.SyntaxKind.MinusMinusToken
+          Array.contains(
+            [
+              ts.SyntaxKind.PlusPlusToken,
+              ts.SyntaxKind.MinusMinusToken,
+              ts.SyntaxKind.PlusEqualsToken,
+              ts.SyntaxKind.MinusEqualsToken,
+              ts.SyntaxKind.AsteriskEqualsToken,
+              ts.SyntaxKind.SlashEqualsToken,
+              ts.SyntaxKind.BarEqualsToken,
+              ts.SyntaxKind.BarBarEqualsToken,
+              ts.SyntaxKind.AmpersandEqualsToken,
+              ts.SyntaxKind.AmpersandAmpersandEqualsToken,
+              ts.SyntaxKind.CaretEqualsToken,
+              ts.SyntaxKind.PercentEqualsToken,
+              ts.SyntaxKind.QuestionQuestionEqualsToken,
+              ts.SyntaxKind.LessThanLessThanEqualsToken,
+              ts.SyntaxKind.GreaterThanGreaterThanEqualsToken,
+              ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken,
+            ],
+            token.kind,
+          )
         ) ?
           Option.some(
             RuleViolation.DisallowedReassignment({
               code: token.parent.getFullText(),
             }),
           )
-        : token.parent.kind === ts.SyntaxKind.VariableDeclaration ?
-          Option.none()
-        : Option.some(
+        : (
+          token.kind === ts.SyntaxKind.EqualsToken &&
+          token.parent.kind !== ts.SyntaxKind.VariableDeclaration
+        ) ?
+          Option.some(
             RuleViolation.DisallowedReassignment({
               code: token.parent.getFullText(),
             }),
-          ),
+          )
+        : Option.none(),
       ),
       (errors) => Writer.error(null, errors),
     )
