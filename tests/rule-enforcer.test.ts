@@ -671,3 +671,92 @@ for (const y of [1, 2, 3]) {
     expect(Array.length(relevantErrors)).toStrictEqual(10)
   })
 })
+
+describe("disallow: if-statements", () => {
+  test("all kinds", () => {
+    const source = `
+if (x === 1) console.log('test')
+
+if (x === 1) console.log('test')
+else console.log('test')
+
+if (x === 1) {
+  console.log('test')
+} else {
+  console.log('test')
+}
+
+if (x === 1) {
+  console.log('test')
+} else if (x === 2) {
+  console.log('test')
+}
+
+if (x === 1) {
+  console.log('test')
+} else if (x === 2) {
+  console.log('test')
+} else if (x === 3) {
+  console.log('test')
+}
+
+if (x === 1) {
+  console.log('test')
+} else if (x === 2) {
+  console.log('test')
+} else
+  console.log('test')
+}
+
+if (x === 1) {
+  console.log('test')
+} else if (x === 2) {
+  console.log('test')
+} else if (x === 3) {
+  console.log('test')
+} else {
+  console.log('test')
+}
+
+if (x === 1) {
+} else if (x === 2) {
+} else if (x === 3) {
+} else {
+  if (x === 1) {
+    if (x === 1) {
+    } else if (x === 2) {
+    } else if (x === 3) {
+      if (x === 1) {
+      } else if (x === 2) {
+        if (x === 1) {
+        } else if (x === 2) {
+        } else if (x === 3) {
+        } else {
+        }
+      } else if (x === 3) {
+      } else {
+      }
+    } else {
+    }
+  } else if (x === 2) {
+  } else if (x === 3) {
+  } else {
+  }
+}
+`
+    const rules = Rules.make({
+      disallow: ["if-statements"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+
+    const relevantErrors = pipe(
+      errors,
+      Array.filter((error) =>
+        RuleViolation.$is("DisallowedIfStatements")(error),
+      ),
+    )
+
+    expect(Array.length(relevantErrors)).toStrictEqual(28)
+  })
+})

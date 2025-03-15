@@ -9,6 +9,7 @@ export type RuleViolation = Data.TaggedEnum<{
   DisallowedDeclarations: { disallowed: string; code: string }
   DisallowedReassignment: { code: string }
   DisallowedLoops: { code: string }
+  DisallowedIfStatements: { code: string }
 }>
 
 export const RuleViolation = Data.taggedEnum<RuleViolation>()
@@ -23,6 +24,7 @@ export const Rules = S.Struct({
       S.Union(
         S.Literal("reassignment"), //
         S.Literal("loops"),
+        S.Literal("if-statements"),
       ),
     ),
   ),
@@ -39,6 +41,7 @@ export const validateCode = (
     Writer.flatMap(() => validateValidDeclarations(code, rules)),
     Writer.flatMap(() => validateDisallowReassignment(code, rules)),
     Writer.flatMap(() => validateDisallowLoops(code, rules)),
+    Writer.flatMap(() => validateDisallowIfStatements(code, rules)),
   )
 
 const validateExpectedFunctions = (
@@ -218,6 +221,31 @@ const validateDisallowLoops = (
         ) ?
           Option.some(
             RuleViolation.DisallowedLoops({
+              code: token.parent.getFullText(),
+            }),
+          )
+        : Option.none(),
+      ),
+      (errors) => Writer.error(null, errors),
+    )
+
+const validateDisallowIfStatements = (
+  code: string,
+  params: Rules,
+): Writer<null, RuleViolation> =>
+  (
+    params.disallow === undefined ||
+    !Array.contains(params.disallow, "if-statements")
+  ) ?
+    Writer.success(null)
+  : pipe(
+      code,
+      AstHelper.parseCode,
+      AstHelper.getAllNodes,
+      Array.filterMap((token) =>
+        token.kind === ts.SyntaxKind.IfStatement ?
+          Option.some(
+            RuleViolation.DisallowedIfStatements({
               code: token.parent.getFullText(),
             }),
           )
