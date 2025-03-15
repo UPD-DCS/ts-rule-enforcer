@@ -51,3 +51,8 @@ export const getFunctionName = (node: ts.Node): Option.Option<string> =>
   ) ?
     Option.some(node.name.getText())
   : Option.none()
+
+export const getAllNodes = (node: ts.Node): ts.Node[] => [
+  node,
+  ...Array.flatMap(node.getChildren(), getAllNodes),
+]
