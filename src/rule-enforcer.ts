@@ -146,13 +146,27 @@ const validateDisallowReassignment = (
       code,
       AstHelper.parseCode,
       AstHelper.getAllNodes,
-      Array.filter((node) => node.kind === ts.SyntaxKind.EqualsToken),
-      Array.filterMap((equals) =>
-        equals.parent.kind === ts.SyntaxKind.VariableDeclaration ?
+      Array.filter(
+        (node) =>
+          node.kind === ts.SyntaxKind.EqualsToken ||
+          node.kind === ts.SyntaxKind.PlusPlusToken ||
+          node.kind === ts.SyntaxKind.MinusMinusToken,
+      ),
+      Array.filterMap((token) =>
+        (
+          token.kind === ts.SyntaxKind.PlusPlusToken ||
+          token.kind === ts.SyntaxKind.MinusMinusToken
+        ) ?
+          Option.some(
+            RuleViolation.DisallowedReassignment({
+              code: token.parent.getFullText(),
+            }),
+          )
+        : token.parent.kind === ts.SyntaxKind.VariableDeclaration ?
           Option.none()
         : Option.some(
             RuleViolation.DisallowedReassignment({
-              code: equals.parent.getFullText(),
+              code: token.parent.getFullText(),
             }),
           ),
       ),

@@ -502,4 +502,88 @@ describe("disallow-reassignment", () => {
 
     expect(Array.length(relevantErrors)).toStrictEqual(2)
   })
+
+  test("increment prefix", () => {
+    const source = `
+  let y = 1
+  ++y
+`
+    const rules = Rules.make({
+      disallow: ["reassignment"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+
+    const relevantErrors = pipe(
+      errors,
+      Array.filter((error) =>
+        RuleViolation.$is("DisallowedReassignment")(error),
+      ),
+    )
+
+    expect(Array.length(relevantErrors)).toStrictEqual(1)
+  })
+
+  test("increment postfix", () => {
+    const source = `
+  let y = 1
+  y++
+`
+    const rules = Rules.make({
+      disallow: ["reassignment"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+
+    const relevantErrors = pipe(
+      errors,
+      Array.filter((error) =>
+        RuleViolation.$is("DisallowedReassignment")(error),
+      ),
+    )
+
+    expect(Array.length(relevantErrors)).toStrictEqual(1)
+  })
+
+  test("decrement prefix", () => {
+    const source = `
+  let y = 1
+  --y
+`
+    const rules = Rules.make({
+      disallow: ["reassignment"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+
+    const relevantErrors = pipe(
+      errors,
+      Array.filter((error) =>
+        RuleViolation.$is("DisallowedReassignment")(error),
+      ),
+    )
+
+    expect(Array.length(relevantErrors)).toStrictEqual(1)
+  })
+
+  test("decrement postfix", () => {
+    const source = `
+  let y = 1
+  y--
+`
+    const rules = Rules.make({
+      disallow: ["reassignment"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+
+    const relevantErrors = pipe(
+      errors,
+      Array.filter((error) =>
+        RuleViolation.$is("DisallowedReassignment")(error),
+      ),
+    )
+
+    expect(Array.length(relevantErrors)).toStrictEqual(1)
+  })
 })
