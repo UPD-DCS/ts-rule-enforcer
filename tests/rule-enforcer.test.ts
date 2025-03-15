@@ -904,3 +904,25 @@ import ts from "typescript"
     expect(Array.length(relevantErrors)).toStrictEqual(0)
   })
 })
+
+describe("disallow: console", () => {
+  test("all kinds", () => {
+    const source = `
+console.log("1")
+const c = console
+c.log("2")
+`
+    const rules = Rules.make({
+      disallow: ["console"],
+    })
+
+    const [_, errors] = Writer.run(validateCode(source, rules))
+
+    const relevantErrors = pipe(
+      errors,
+      Array.filter((error) => RuleViolation.$is("DisallowedConsole")(error)),
+    )
+
+    expect(Array.length(relevantErrors)).toStrictEqual(2)
+  })
+})

@@ -16,6 +16,7 @@ export const Rules = S.Struct({
         S.Literal("reassignment"), //
         S.Literal("loops"),
         S.Literal("if-statements"),
+        S.Literal("console"),
       ),
     ),
   ),
@@ -28,6 +29,7 @@ export type RuleViolation = Data.TaggedEnum<{
   DisallowedLoops: { code: string }
   DisallowedIfStatements: { code: string }
   DisallowedImport: { name: string; code: string }
+  DisallowedConsole: { code: string }
 }>
 
 export const RuleViolation = Data.taggedEnum<RuleViolation>()
@@ -45,6 +47,7 @@ export const validateCode = (
     Writer.flatMap(() => validateDisallowLoops(code, rules)),
     Writer.flatMap(() => validateDisallowIfStatements(code, rules)),
     Writer.flatMap(() => validateAllowedImports(code, rules)),
+    Writer.flatMap(() => validateDisallowConsole(code, rules)),
   )
 
 const validateExpectedFunctions = (
@@ -79,9 +82,9 @@ const validateExpectedFunctions = (
 
 const validateValidDeclarations = (
   code: string,
-  params: Rules,
+  rules: Rules,
 ): Writer<null, RuleViolation> =>
-  params.validDeclarations === undefined ?
+  rules.validDeclarations === undefined ?
     Writer.success(null)
   : pipe(
       code,
@@ -99,16 +102,16 @@ const validateValidDeclarations = (
       ),
       (nodes) =>
         pipe(
-          Array.contains(params.validDeclarations!, "const") ?
+          Array.contains(rules.validDeclarations!, "const") ?
             Writer.success<null, RuleViolation>(null)
           : validateAbsentConst(nodes),
           Writer.flatMap(() =>
-            Array.contains(params.validDeclarations!, "let") ?
+            Array.contains(rules.validDeclarations!, "let") ?
               Writer.success(null)
             : validateAbsentLet(nodes),
           ),
           Writer.flatMap(() =>
-            Array.contains(params.validDeclarations!, "var") ?
+            Array.contains(rules.validDeclarations!, "var") ?
               Writer.success(null)
             : validateAbsentVar(nodes),
           ),
@@ -127,7 +130,7 @@ const validateAbsentDeclaration = (
         Option.some(
           RuleViolation.DisallowedDeclarations({
             disallowed: declaration,
-            code: node.parent.getFullText(),
+            code: node.parent.getText(),
           }),
         )
       : Option.none(),
@@ -146,11 +149,11 @@ const validateAbsentVar = (nodes: ts.Node[]): Writer<null, RuleViolation> =>
 
 const validateDisallowReassignment = (
   code: string,
-  params: Rules,
+  rules: Rules,
 ): Writer<null, RuleViolation> =>
   (
-    params.disallow === undefined ||
-    !Array.contains(params.disallow, "reassignment")
+    rules.disallow === undefined ||
+    !Array.contains(rules.disallow, "reassignment")
   ) ?
     Writer.success(null)
   : pipe(
@@ -183,7 +186,7 @@ const validateDisallowReassignment = (
         ) ?
           Option.some(
             RuleViolation.DisallowedReassignment({
-              code: token.parent.getFullText(),
+              code: token.parent.getText(),
             }),
           )
         : (
@@ -192,7 +195,7 @@ const validateDisallowReassignment = (
         ) ?
           Option.some(
             RuleViolation.DisallowedReassignment({
-              code: token.parent.getFullText(),
+              code: token.parent.getText(),
             }),
           )
         : Option.none(),
@@ -202,9 +205,9 @@ const validateDisallowReassignment = (
 
 const validateDisallowLoops = (
   code: string,
-  params: Rules,
+  rules: Rules,
 ): Writer<null, RuleViolation> =>
-  params.disallow === undefined || !Array.contains(params.disallow, "loops") ?
+  rules.disallow === undefined || !Array.contains(rules.disallow, "loops") ?
     Writer.success(null)
   : pipe(
       code,
@@ -224,7 +227,7 @@ const validateDisallowLoops = (
         ) ?
           Option.some(
             RuleViolation.DisallowedLoops({
-              code: token.parent.getFullText(),
+              code: token.parent.getText(),
             }),
           )
         : Option.none(),
@@ -234,11 +237,11 @@ const validateDisallowLoops = (
 
 const validateDisallowIfStatements = (
   code: string,
-  params: Rules,
+  rules: Rules,
 ): Writer<null, RuleViolation> =>
   (
-    params.disallow === undefined ||
-    !Array.contains(params.disallow, "if-statements")
+    rules.disallow === undefined ||
+    !Array.contains(rules.disallow, "if-statements")
   ) ?
     Writer.success(null)
   : pipe(
@@ -249,7 +252,7 @@ const validateDisallowIfStatements = (
         token.kind === ts.SyntaxKind.IfStatement ?
           Option.some(
             RuleViolation.DisallowedIfStatements({
-              code: token.parent.getFullText(),
+              code: token.parent.getText(),
             }),
           )
         : Option.none(),
@@ -321,9 +324,9 @@ const importPatternToRichType = (
 
 const validateAllowedImports = (
   code: string,
-  params: Rules,
+  rules: Rules,
 ): Writer<null, RuleViolation> =>
-  params.allowedImports === undefined ?
+  rules.allowedImports === undefined ?
     Writer.success(null)
   : pipe(
       code,
@@ -335,7 +338,7 @@ const validateAllowedImports = (
             node,
             pipe(node.moduleSpecifier.getText(), String.replaceAll('"', "")),
             Array.reduce(
-              params.allowedImports!,
+              rules.allowedImports!,
               AllowedImportPattern.Regular({ mapping: HashMap.empty() }),
               importPatternToRichType,
             ),
@@ -383,7 +386,7 @@ const validateSingleModuleImport = (
                         Option.some(
                           RuleViolation.DisallowedImport({
                             name: module,
-                            code: node.getFullText(),
+                            code: node.getText(),
                           }),
                         )
                       : Option.none(),
@@ -394,9 +397,31 @@ const validateSingleModuleImport = (
             Option.some(
               RuleViolation.DisallowedImport({
                 name: module,
-                code: node.getFullText(),
+                code: node.getText(),
               }),
             ),
         }),
       ),
   })
+
+const validateDisallowConsole = (
+  code: string,
+  rules: Rules,
+): Writer<null, RuleViolation> =>
+  rules.disallow === undefined || !Array.contains(rules.disallow, "console") ?
+    Writer.success(null)
+  : pipe(
+      code,
+      AstHelper.parseCode,
+      AstHelper.getAllNodes,
+      Array.filterMap((n) =>
+        ts.isIdentifier(n) && n.getText() === "console" ?
+          Option.some(
+            RuleViolation.DisallowedConsole({
+              code: n.parent.getText(),
+            }),
+          )
+        : Option.none(),
+      ),
+      (errors) => Writer.error(null, errors),
+    )
