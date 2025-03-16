@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "effect": "^3.13.10",
+    "snabbdom": "^3.6.2",
     "typescript": "^5.8.2"
   }
 }

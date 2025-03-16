@@ -1,0 +1,20 @@
+.input-box {
+  width: 100%;
+}
+
+.fade-out {
+  animation: fadeOut 2s forwards;
+}
+
+@keyframes fadeOut {
+  from {
+    background-color: rgba(127, 127, 127, 1);
+  }
+  to {
+    background-color: rgba(127, 127, 127, 0);
+  }
+}
+
+.todo-done {
+  text-decoration: line-through;
+}

@@ -1,7 +1,14 @@
-import { Array, pipe, Schema as S, Data, Option, String, HashMap } from "effect"
+import {
+  Array,
+  Match,
+  pipe,
+  Schema as S,
+  Option,
+  String,
+  HashMap,
+} from "effect"
 import * as AstHelper from "./ast-helper"
 import { Writer } from "./writer"
-import { NonEmptyReadonlyArray } from "effect/Array"
 import ts from "typescript"
 
 export const Rules = S.Struct({
@@ -23,18 +30,31 @@ export const Rules = S.Struct({
   ),
 })
 
-export type RuleViolation = Data.TaggedEnum<{
-  MissingExpectedFunction: { missing: NonEmptyReadonlyArray<string> }
-  DisallowedDeclarations: { disallowed: string; code: string }
-  DisallowedReassignment: { code: string }
-  DisallowedLoops: { code: string }
-  DisallowedIfStatements: { code: string }
-  DisallowedImport: { name: string; code: string }
-  DisallowedConsole: { code: string }
-  DisallowedHelperFunctions: { code: string }
-}>
+export const RuleViolation = S.Union(
+  S.TaggedStruct("MissingExpectedFunction", {
+    missing: S.NonEmptyArray(S.String),
+  }),
+  S.TaggedStruct("DisallowedDeclarations", {
+    disallowed: S.String,
+    code: S.String,
+  }),
+  S.TaggedStruct("DisallowedReassignment", { code: S.String }),
+  S.TaggedStruct("DisallowedLoops", { code: S.String }),
+  S.TaggedStruct("DisallowedIfStatements", { code: S.String }),
+  S.TaggedStruct("DisallowedImport", { name: S.String, code: S.String }),
+  S.TaggedStruct("DisallowedConsole", { code: S.String }),
+  S.TaggedStruct("DisallowedHelperFunctions", { code: S.String }),
+)
 
-export const RuleViolation = Data.taggedEnum<RuleViolation>()
+export type RuleViolation = typeof RuleViolation.Type
+const MissingExpectedFunction = RuleViolation.members[0]
+const DisallowedDeclarations = RuleViolation.members[1]
+const DisallowedReassignment = RuleViolation.members[2]
+const DisallowedLoops = RuleViolation.members[3]
+const DisallowedIfStatements = RuleViolation.members[4]
+const DisallowedImport = RuleViolation.members[5]
+const DisallowedConsole = RuleViolation.members[6]
+const DisallowedHelperFunctions = RuleViolation.members[7]
 
 export type Rules = typeof Rules.Type
 
@@ -76,7 +96,7 @@ const validateExpectedFunctions = (
       (unmatchedRequired) =>
         Array.isNonEmptyArray(unmatchedRequired) ?
           Writer.error(null, [
-            RuleViolation.MissingExpectedFunction({
+            MissingExpectedFunction.make({
               missing: unmatchedRequired,
             }),
           ])
@@ -131,7 +151,7 @@ const validateAbsentDeclaration = (
     Array.filterMap((node) =>
       node.kind === syntaxKind ?
         Option.some(
-          RuleViolation.DisallowedDeclarations({
+          DisallowedDeclarations.make({
             disallowed: declaration,
             code: node.parent.getText(),
           }),
@@ -188,7 +208,7 @@ const validateDisallowReassignment = (
           )
         ) ?
           Option.some(
-            RuleViolation.DisallowedReassignment({
+            DisallowedReassignment.make({
               code: token.parent.getText(),
             }),
           )
@@ -197,7 +217,7 @@ const validateDisallowReassignment = (
           token.parent.kind !== ts.SyntaxKind.VariableDeclaration
         ) ?
           Option.some(
-            RuleViolation.DisallowedReassignment({
+            DisallowedReassignment.make({
               code: token.parent.getText(),
             }),
           )
@@ -229,7 +249,7 @@ const validateDisallowLoops = (
           )
         ) ?
           Option.some(
-            RuleViolation.DisallowedLoops({
+            DisallowedLoops.make({
               code: token.parent.getText(),
             }),
           )
@@ -254,7 +274,7 @@ const validateDisallowIfStatements = (
       Array.filterMap((token) =>
         token.kind === ts.SyntaxKind.IfStatement ?
           Option.some(
-            RuleViolation.DisallowedIfStatements({
+            DisallowedIfStatements.make({
               code: token.parent.getText(),
             }),
           )
@@ -263,67 +283,80 @@ const validateDisallowIfStatements = (
       (errors) => Writer.error(null, errors),
     )
 
-type ModulePartPattern = Data.TaggedEnum<{
-  AllowAll: {}
-  Regular: { parts: string[] }
-}>
+const ModulePartPattern = S.Union(
+  S.TaggedStruct("AllowAllParts", {}),
+  S.TaggedStruct("RegularParts", { parts: S.Array(S.String) }),
+)
+const AllowAllParts = ModulePartPattern.members[0]
+const RegularParts = ModulePartPattern.members[1]
 
-const ModulePartPattern = Data.taggedEnum<ModulePartPattern>()
-
-type AllowedImportPattern = Data.TaggedEnum<{
-  AllowAll: {}
-  Regular: { mapping: HashMap.HashMap<string, ModulePartPattern> }
-}>
-
-const AllowedImportPattern = Data.taggedEnum<AllowedImportPattern>()
+const AllowedImportPattern = S.Union(
+  S.TaggedStruct("AllowAllModules", {}),
+  S.TaggedStruct("RegularModules", {
+    mapping: S.HashMap({ key: S.String, value: ModulePartPattern }),
+  }),
+)
+const AllowAllModules = AllowedImportPattern.members[0]
+const RegularModules = AllowedImportPattern.members[1]
+type AllowedImportPattern = typeof AllowedImportPattern.Type
 
 const importPatternToRichType = (
   allowedImportPattern: AllowedImportPattern,
   patternStr: string,
 ) =>
-  AllowedImportPattern.$match(allowedImportPattern, {
-    AllowAll: () => allowedImportPattern,
-    Regular: ({ mapping }) =>
-      patternStr === "*" ? AllowedImportPattern.AllowAll()
+  pipe(
+    Match.value(allowedImportPattern),
+    Match.tag("AllowAllModules", () => allowedImportPattern),
+    Match.tag("RegularModules", ({ mapping }) =>
+      patternStr === "*" ? AllowAllModules.make()
       : !String.includes(".")(patternStr) ?
         pipe(
-          HashMap.set(mapping, patternStr, ModulePartPattern.AllowAll()),
-          (mapping) => AllowedImportPattern.Regular({ mapping }),
+          HashMap.set(mapping, patternStr, AllowAllParts.make()),
+          (mapping) => RegularModules.make({ mapping }),
         )
       : pipe(String.replace(/\..+$/, "")(patternStr), (key) =>
-          Option.match(HashMap.get(mapping, key), {
-            onSome: (modulePartPattern) =>
-              ModulePartPattern.$match(modulePartPattern, {
-                AllowAll: () => allowedImportPattern,
-                Regular: ({ parts }) =>
+          pipe(
+            Match.value(HashMap.get(mapping, key)),
+            Match.tag("Some", (modulePartPattern) =>
+              pipe(
+                Match.value(modulePartPattern.value),
+                Match.tag("AllowAllParts", () => allowedImportPattern),
+                Match.tag("RegularParts", ({ parts }) =>
                   pipe(
                     HashMap.set(
                       mapping,
                       key,
-                      ModulePartPattern.Regular({
+                      RegularParts.make({
                         parts: Array.append(
                           parts,
                           String.replace(/^.+\./, "")(patternStr),
                         ),
                       }),
                     ),
-                    (mapping) => AllowedImportPattern.Regular({ mapping }),
+                    (mapping) => RegularModules.make({ mapping }),
                   ),
-              }),
-            onNone: () =>
+                ),
+                Match.exhaustive,
+              ),
+            ),
+            Match.tag("None", () =>
               pipe(
                 HashMap.set(
                   mapping,
                   key,
-                  ModulePartPattern.Regular({
+                  RegularParts.make({
                     parts: [String.replace(/^.+\./, "")(patternStr)],
                   }),
                 ),
-                (mapping) => AllowedImportPattern.Regular({ mapping }),
+                (mapping) => RegularModules.make({ mapping }),
               ),
-          }),
+            ),
+            Match.exhaustive,
+          ),
         ),
-  })
+    ),
+    Match.exhaustive,
+  )
 
 const validateAllowedImports = (
   code: string,
@@ -342,7 +375,7 @@ const validateAllowedImports = (
             pipe(node.moduleSpecifier.getText(), String.replaceAll('"', "")),
             Array.reduce(
               rules.allowedImports!,
-              AllowedImportPattern.Regular({ mapping: HashMap.empty() }),
+              RegularModules.make({ mapping: HashMap.empty() }),
               importPatternToRichType,
             ),
           )
@@ -356,56 +389,60 @@ const validateSingleModuleImport = (
   module: string,
   pattern: AllowedImportPattern,
 ): Option.Option<RuleViolation> =>
-  AllowedImportPattern.$match(pattern, {
-    AllowAll: () => Option.none(),
-    Regular: ({ mapping }) =>
+  pipe(
+    Match.value(pattern),
+    Match.tag("AllowAllModules", () => Option.none()),
+    Match.tag("RegularModules", ({ mapping }) =>
       pipe(
-        HashMap.get(mapping, module),
-        Option.match({
-          onSome: (modulePartPattern) =>
-            pipe(
-              modulePartPattern,
-              ModulePartPattern.$match({
-                AllowAll: () => Option.none(),
-                Regular: ({ parts }) =>
-                  pipe(
-                    node,
-                    AstHelper.getAllNodes,
-                    Array.filterMap((n) =>
-                      ts.isIdentifier(n) ?
-                        ts.isImportSpecifier(n.parent) ?
-                          n !== n.parent.getChildAt(0) ?
-                            Option.none() // Ignore import aliases
-                          : !Array.contains(parts, n.getText()) ?
-                            Option.some(n.getText())
-                          : Option.none()
-                        : !Array.contains(parts, n.getText()) ?
-                          Option.some(n.getText())
-                        : Option.none()
-                      : Option.none(),
-                    ),
-                    (unmatched) =>
-                      Array.isNonEmptyArray(unmatched) ?
-                        Option.some(
-                          RuleViolation.DisallowedImport({
-                            name: module,
-                            code: node.getText(),
-                          }),
-                        )
-                      : Option.none(),
-                  ),
-              }),
+        Match.value(HashMap.get(mapping, module)),
+        Match.tag("Some", (modulePartPattern) =>
+          pipe(
+            Match.value(modulePartPattern.value),
+            Match.tag("AllowAllParts", () => Option.none()),
+            Match.tag("RegularParts", ({ parts }) =>
+              pipe(
+                node,
+                AstHelper.getAllNodes,
+                Array.filterMap((n) =>
+                  ts.isIdentifier(n) ?
+                    ts.isImportSpecifier(n.parent) ?
+                      n !== n.parent.getChildAt(0) ?
+                        Option.none() // Ignore import aliases
+                      : !Array.contains(parts, n.getText()) ?
+                        Option.some(n.getText())
+                      : Option.none()
+                    : !Array.contains(parts, n.getText()) ?
+                      Option.some(n.getText())
+                    : Option.none()
+                  : Option.none(),
+                ),
+                (unmatched) =>
+                  Array.isNonEmptyArray(unmatched) ?
+                    Option.some(
+                      DisallowedImport.make({
+                        name: module,
+                        code: node.getText(),
+                      }),
+                    )
+                  : Option.none(),
+              ),
             ),
-          onNone: () =>
-            Option.some(
-              RuleViolation.DisallowedImport({
-                name: module,
-                code: node.getText(),
-              }),
-            ),
-        }),
+            Match.exhaustive,
+          ),
+        ),
+        Match.tag("None", () =>
+          Option.some(
+            DisallowedImport.make({
+              name: module,
+              code: node.getText(),
+            }),
+          ),
+        ),
+        Match.exhaustive,
       ),
-  })
+    ),
+    Match.exhaustive,
+  )
 
 const validateDisallowConsole = (
   code: string,
@@ -420,7 +457,7 @@ const validateDisallowConsole = (
       Array.filterMap((n) =>
         ts.isIdentifier(n) && n.getText() === "console" ?
           Option.some(
-            RuleViolation.DisallowedConsole({
+            DisallowedConsole.make({
               code: n.parent.getText(),
             }),
           )
@@ -446,20 +483,24 @@ const validateDisallowHelperFunctions = (
       Array.filterMap((n) =>
         pipe(
           AstHelper.getFunctionName(n),
-          Option.match({
-            onSome: (functionName) =>
-              (
-                (ts.isFunctionDeclaration(n) || ts.isVariableDeclaration(n)) &&
-                !pipe(rules.expectedFunctions!, Array.contains(functionName))
-              ) ?
-                Option.some(
-                  RuleViolation.DisallowedHelperFunctions({
-                    code: n.getText(),
-                  }),
-                )
-              : Option.none(),
-            onNone: () => Option.none(),
-          }),
+          Match.value,
+          Match.tag("Some", (someFunctionName) =>
+            (
+              (ts.isFunctionDeclaration(n) || ts.isVariableDeclaration(n)) &&
+              !pipe(
+                rules.expectedFunctions!,
+                Array.contains(someFunctionName.value),
+              )
+            ) ?
+              Option.some(
+                DisallowedHelperFunctions.make({
+                  code: n.getText(),
+                }),
+              )
+            : Option.none(),
+          ),
+          Match.tag("None", () => Option.none()),
+          Match.exhaustive,
         ),
       ),
       (errors) => Writer.error(null, errors),
