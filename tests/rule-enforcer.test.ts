@@ -1,7 +1,18 @@
 import { describe, expect, test } from "vitest"
-import { validateCode, Rules, RuleViolation } from "../src/rule-enforcer"
+import {
+  validateCode,
+  Rules,
+  MissingExpectedFunction,
+  DisallowedDeclarations,
+  DisallowedReassignment,
+  DisallowedLoops,
+  DisallowedIfStatements,
+  DisallowedImport,
+  DisallowedConsole,
+  DisallowedHelperFunctions,
+} from "../src/rule-enforcer"
 import { Writer } from "../src/writer"
-import { Array, pipe } from "effect"
+import { Array, Schema as S, pipe } from "effect"
 
 describe("expectedFunctions", () => {
   test("absent rule", () => {
@@ -129,7 +140,7 @@ describe("expectedFunctions", () => {
 
     const [_, errors] = Writer.run(validateCode(source, rules))
     expect(errors).toStrictEqual([
-      RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
+      MissingExpectedFunction.make({ missing: ["h"] }),
     ])
   })
 
@@ -147,7 +158,7 @@ describe("expectedFunctions", () => {
 
     const [_, errors] = Writer.run(validateCode(source, rules))
     expect(errors).toStrictEqual([
-      RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
+      MissingExpectedFunction.make({ missing: ["h"] }),
     ])
   })
 
@@ -165,7 +176,7 @@ describe("expectedFunctions", () => {
 
     const [_, errors] = Writer.run(validateCode(source, rules))
     expect(errors).toStrictEqual([
-      RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
+      MissingExpectedFunction.make({ missing: ["h"] }),
     ])
   })
 
@@ -185,7 +196,7 @@ describe("expectedFunctions", () => {
 
     const [_, errors] = Writer.run(validateCode(source, rules))
     expect(errors).toStrictEqual([
-      RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
+      MissingExpectedFunction.make({ missing: ["h"] }),
     ])
   })
 
@@ -205,7 +216,7 @@ describe("expectedFunctions", () => {
 
     const [_, errors] = Writer.run(validateCode(source, rules))
     expect(errors).toStrictEqual([
-      RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
+      MissingExpectedFunction.make({ missing: ["h"] }),
     ])
   })
 
@@ -225,7 +236,7 @@ describe("expectedFunctions", () => {
 
     const [_, errors] = Writer.run(validateCode(source, rules))
     expect(errors).toStrictEqual([
-      RuleViolation.MissingExpectedFunction({ missing: ["h"] }),
+      MissingExpectedFunction.make({ missing: ["h"] }),
     ])
   })
 
@@ -262,7 +273,7 @@ describe("expectedFunctions", () => {
 
     const [_, errors] = Writer.run(validateCode(source, rules))
     expect(errors).toStrictEqual([
-      RuleViolation.MissingExpectedFunction({ missing: ["g"] }),
+      MissingExpectedFunction.make({ missing: ["g"] }),
     ])
   })
 })
@@ -290,9 +301,7 @@ describe("validDeclarations", () => {
 
     const declarationErrors = pipe(
       errors,
-      Array.filter((error) =>
-        RuleViolation.$is("DisallowedDeclarations")(error),
-      ),
+      Array.filter(S.is(DisallowedDeclarations)),
     )
 
     pipe(
@@ -339,9 +348,7 @@ describe("validDeclarations", () => {
 
     const declarationErrors = pipe(
       errors,
-      Array.filter((error) =>
-        RuleViolation.$is("DisallowedDeclarations")(error),
-      ),
+      Array.filter(S.is(DisallowedDeclarations)),
     )
 
     pipe(
@@ -388,9 +395,7 @@ describe("validDeclarations", () => {
 
     const declarationErrors = pipe(
       errors,
-      Array.filter((error) =>
-        RuleViolation.$is("DisallowedDeclarations")(error),
-      ),
+      Array.filter(S.is(DisallowedDeclarations)),
     )
 
     pipe(
@@ -437,9 +442,7 @@ describe("validDeclarations", () => {
 
     const declarationErrors = pipe(
       errors,
-      Array.filter((error) =>
-        RuleViolation.$is("DisallowedDeclarations")(error),
-      ),
+      Array.filter(S.is(DisallowedDeclarations)),
     )
 
     pipe(
@@ -486,9 +489,7 @@ describe("validDeclarations", () => {
 
     const declarationErrors = pipe(
       errors,
-      Array.filter((error) =>
-        RuleViolation.$is("DisallowedDeclarations")(error),
-      ),
+      Array.filter(S.is(DisallowedDeclarations)),
     )
 
     pipe(
@@ -528,9 +529,7 @@ describe("disallow: reassignment", () => {
 
     const relevantErrors = pipe(
       errors,
-      Array.filter((error) =>
-        RuleViolation.$is("DisallowedReassignment")(error),
-      ),
+      Array.filter(S.is(DisallowedReassignment)),
     )
 
     expect(Array.length(relevantErrors)).toStrictEqual(1)
@@ -550,9 +549,7 @@ describe("disallow: reassignment", () => {
 
     const relevantErrors = pipe(
       errors,
-      Array.filter((error) =>
-        RuleViolation.$is("DisallowedReassignment")(error),
-      ),
+      Array.filter(S.is(DisallowedReassignment)),
     )
 
     expect(Array.length(relevantErrors)).toStrictEqual(0)
@@ -571,9 +568,7 @@ describe("disallow: reassignment", () => {
 
     const relevantErrors = pipe(
       errors,
-      Array.filter((error) =>
-        RuleViolation.$is("DisallowedReassignment")(error),
-      ),
+      Array.filter(S.is(DisallowedReassignment)),
     )
 
     expect(Array.length(relevantErrors)).toStrictEqual(1)
@@ -599,9 +594,7 @@ describe("disallow: reassignment", () => {
 
     const relevantErrors = pipe(
       errors,
-      Array.filter((error) =>
-        RuleViolation.$is("DisallowedReassignment")(error),
-      ),
+      Array.filter(S.is(DisallowedReassignment)),
     )
 
     expect(Array.length(relevantErrors)).toStrictEqual(2)
@@ -620,9 +613,7 @@ describe("disallow: reassignment", () => {
 
     const relevantErrors = pipe(
       errors,
-      Array.filter((error) =>
-        RuleViolation.$is("DisallowedReassignment")(error),
-      ),
+      Array.filter(S.is(DisallowedReassignment)),
     )
 
     expect(Array.length(relevantErrors)).toStrictEqual(1)
@@ -641,9 +632,7 @@ describe("disallow: reassignment", () => {
 
     const relevantErrors = pipe(
       errors,
-      Array.filter((error) =>
-        RuleViolation.$is("DisallowedReassignment")(error),
-      ),
+      Array.filter(S.is(DisallowedReassignment)),
     )
 
     expect(Array.length(relevantErrors)).toStrictEqual(1)
@@ -662,9 +651,7 @@ describe("disallow: reassignment", () => {
 
     const relevantErrors = pipe(
       errors,
-      Array.filter((error) =>
-        RuleViolation.$is("DisallowedReassignment")(error),
-      ),
+      Array.filter(S.is(DisallowedReassignment)),
     )
 
     expect(Array.length(relevantErrors)).toStrictEqual(1)
@@ -683,9 +670,7 @@ describe("disallow: reassignment", () => {
 
     const relevantErrors = pipe(
       errors,
-      Array.filter((error) =>
-        RuleViolation.$is("DisallowedReassignment")(error),
-      ),
+      Array.filter(S.is(DisallowedReassignment)),
     )
 
     expect(Array.length(relevantErrors)).toStrictEqual(1)
@@ -717,9 +702,7 @@ describe("disallow: reassignment", () => {
 
     const relevantErrors = pipe(
       errors,
-      Array.filter((error) =>
-        RuleViolation.$is("DisallowedReassignment")(error),
-      ),
+      Array.filter(S.is(DisallowedReassignment)),
     )
 
     expect(Array.length(relevantErrors)).toStrictEqual(14)
@@ -767,10 +750,7 @@ for (const y of [1, 2, 3]) {
 
     const [_, errors] = Writer.run(validateCode(source, rules))
 
-    const relevantErrors = pipe(
-      errors,
-      Array.filter((error) => RuleViolation.$is("DisallowedLoops")(error)),
-    )
+    const relevantErrors = pipe(errors, Array.filter(S.is(DisallowedLoops)))
 
     expect(Array.length(relevantErrors)).toStrictEqual(10)
   })
@@ -856,9 +836,7 @@ if (x === 1) {
 
     const relevantErrors = pipe(
       errors,
-      Array.filter((error) =>
-        RuleViolation.$is("DisallowedIfStatements")(error),
-      ),
+      Array.filter(S.is(DisallowedIfStatements)),
     )
 
     expect(Array.length(relevantErrors)).toStrictEqual(28)
@@ -884,10 +862,7 @@ import ts from "typescript"
 
     const [_, errors] = Writer.run(validateCode(source, rules))
 
-    const relevantErrors = pipe(
-      errors,
-      Array.filter((error) => RuleViolation.$is("DisallowedImport")(error)),
-    )
+    const relevantErrors = pipe(errors, Array.filter(S.is(DisallowedImport)))
 
     expect(Array.length(relevantErrors)).toStrictEqual(9)
   })
@@ -910,10 +885,7 @@ import ts from "typescript"
 
     const [_, errors] = Writer.run(validateCode(source, rules))
 
-    const relevantErrors = pipe(
-      errors,
-      Array.filter((error) => RuleViolation.$is("DisallowedImport")(error)),
-    )
+    const relevantErrors = pipe(errors, Array.filter(S.is(DisallowedImport)))
 
     expect(Array.length(relevantErrors)).toStrictEqual(7)
   })
@@ -937,10 +909,7 @@ import ts from "typescript"
 
     const [_, errors] = Writer.run(validateCode(source, rules))
 
-    const relevantErrors = pipe(
-      errors,
-      Array.filter((error) => RuleViolation.$is("DisallowedImport")(error)),
-    )
+    const relevantErrors = pipe(errors, Array.filter(S.is(DisallowedImport)))
 
     expect(Array.length(relevantErrors)).toStrictEqual(8)
   })
@@ -955,10 +924,7 @@ import { Array as abc, pipe as def } from "effect"
 
     const [_, errors] = Writer.run(validateCode(source, rules))
 
-    const relevantErrors = pipe(
-      errors,
-      Array.filter((error) => RuleViolation.$is("DisallowedImport")(error)),
-    )
+    const relevantErrors = pipe(errors, Array.filter(S.is(DisallowedImport)))
 
     expect(Array.length(relevantErrors)).toStrictEqual(0)
   })
@@ -982,10 +948,7 @@ import ts from "typescript"
 
     const [_, errors] = Writer.run(validateCode(source, rules))
 
-    const relevantErrors = pipe(
-      errors,
-      Array.filter((error) => RuleViolation.$is("DisallowedImport")(error)),
-    )
+    const relevantErrors = pipe(errors, Array.filter(S.is(DisallowedImport)))
 
     expect(Array.length(relevantErrors)).toStrictEqual(0)
   })
@@ -1000,10 +963,7 @@ import ts from "typescript"
 
     const [_, errors] = Writer.run(validateCode(source, rules))
 
-    const relevantErrors = pipe(
-      errors,
-      Array.filter((error) => RuleViolation.$is("DisallowedImport")(error)),
-    )
+    const relevantErrors = pipe(errors, Array.filter(S.is(DisallowedImport)))
 
     expect(Array.length(relevantErrors)).toStrictEqual(0)
   })
@@ -1022,10 +982,7 @@ c.log("2")
 
     const [_, errors] = Writer.run(validateCode(source, rules))
 
-    const relevantErrors = pipe(
-      errors,
-      Array.filter((error) => RuleViolation.$is("DisallowedConsole")(error)),
-    )
+    const relevantErrors = pipe(errors, Array.filter(S.is(DisallowedConsole)))
 
     expect(Array.length(relevantErrors)).toStrictEqual(2)
   })
@@ -1055,9 +1012,7 @@ function g3() {
 
     const relevantErrors = pipe(
       errors,
-      Array.filter((error) =>
-        RuleViolation.$is("DisallowedHelperFunctions")(error),
-      ),
+      Array.filter(S.is(DisallowedHelperFunctions)),
     )
 
     expect(Array.length(relevantErrors)).toStrictEqual(4)

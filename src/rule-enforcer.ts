@@ -47,14 +47,14 @@ export const RuleViolation = S.Union(
 )
 
 export type RuleViolation = typeof RuleViolation.Type
-const MissingExpectedFunction = RuleViolation.members[0]
-const DisallowedDeclarations = RuleViolation.members[1]
-const DisallowedReassignment = RuleViolation.members[2]
-const DisallowedLoops = RuleViolation.members[3]
-const DisallowedIfStatements = RuleViolation.members[4]
-const DisallowedImport = RuleViolation.members[5]
-const DisallowedConsole = RuleViolation.members[6]
-const DisallowedHelperFunctions = RuleViolation.members[7]
+export const MissingExpectedFunction = RuleViolation.members[0]
+export const DisallowedDeclarations = RuleViolation.members[1]
+export const DisallowedReassignment = RuleViolation.members[2]
+export const DisallowedLoops = RuleViolation.members[3]
+export const DisallowedIfStatements = RuleViolation.members[4]
+export const DisallowedImport = RuleViolation.members[5]
+export const DisallowedConsole = RuleViolation.members[6]
+export const DisallowedHelperFunctions = RuleViolation.members[7]
 
 export type Rules = typeof Rules.Type
 
